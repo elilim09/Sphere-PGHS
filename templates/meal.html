@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Meal Information</title>
+</head>
+<body>
+    <h1>Meal for {{ meal_date }}</h1>
+    {% if meal_info %}
+        <p>{{ meal_info | safe }}</p>
+    {% else %}
+        <p>No meal information found for this date.</p>
+    {% endif %}
+</body>
+</html>
