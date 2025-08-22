@@ -29,8 +29,6 @@ async def get_meal_view(request: Request, meal_date: str = Query(None)):
         response = await client.get(url)
         data = response.json()
         if "mealServiceDietInfo" in data:
-            # The API might return a list of meals (e.g. lunch, dinner) for a single day.
-            # We are joining them with a double <br/> to create some space between them.
             meal_info_list = [item['DDISH_NM'] for item in data['mealServiceDietInfo'][1]['row']]
             meal_info_str = "<br/><br/>".join(meal_info_list)
 
