@@ -1,322 +1,429 @@
-# Sphere-PGHS — 프로젝트 설계 & Agents.md (v1)
+# AGENTS.md — Sphere‑PGHS
 
-> 코드 크래프터 연말 발표회용 통합 웹앱: **분실물 게시판 + 급식(텍스트/AI 이미지) + 총괄 AI 에이전트**
+코드 크래프터(PGHS) 연말 발표회용 통합 웹 **Sphere‑PGHS**의 인공지능(멀티‑에이전트) 설계 문서.
 
----
-
-## 0) TL;DR (한눈에 보기)
-- **핵심 목표:** 학생의 터치 최소화. 에이전트가 “말과 클릭”만으로 페이지 이동·검색·수정·알림까지 수행.
-- **기술 스택(제안):**
-  - FE: **React + Vite + TypeScript + Tailwind** (모바일 퍼스트, PWA 옵션)
-  - BE: **FastAPI + SQLAlchemy + PostgreSQL** (Cloudtype 배포 친화)
-  - Auth: **JWT + (선택) 학교 SSO/구글 OAuth**
-  - 파일: **Object Storage(S3 호환)** 또는 Cloudtype 제공 스토리지
-  - 검색: **PostgreSQL FTS**(한국어 형태소 보완으로 trigram/tsvector 혼용)
-  - 에이전트: **ReAct + Tool-Calling**(FastAPI function schema 노출) + **RAG**(학교 규정/교실 위치 등)
-  - 이미지 생성: **메뉴→프롬프트 변환→이미지 생성 API**(모델 교체 가능 구조)
-- **보안:** 업로드 파일 검사, 권한 계층(RBAC), 감사 로그, 개인정보 최소 수집, 학교 규정 준수.
+> 목표: \*\*학생의 터치 최소화(Zero‑UI 지향)\*\*로 급식 확인(텍스트+AI 이미지), 분실물 관리, 학교 전반 Q/A·내비게이션을 하나의 서비스에서 해결.
 
 ---
 
-## 1) 기능 범위 & 사용자 스토리
-### 1.1 사용자 유형
-- **게스트**: 읽기, 검색은 가능 (학교 정책에 따라 글 열람 범위 제한 가능)
-- **학생/교사(로그인)**: 글 등록/수정(본인), 댓글, 연락처 공유(Opt-in), “내가 등록한 글” 보기
-- **관리자**(담당 교사/자치회 임원): 전체 글 수정·삭제, 상태 변경, 신고 처리, 공지 고정
+## 0) 전체 아키텍처 요약
 
-### 1.2 주요 유즈케이스
-- **분실물**: 사진＋제목＋설명＋상태(분실됨/보관중) 등록 → 목록 카드뷰 → 상세 → 댓글/연락처로 연결 → 상태 변경 → 종료
-- **급식**: NEIS(나이스) 급식 API → 일/주간 텍스트 표시 → **AI 급식판 이미지 생성**(“오늘 급식 미리보기”)
-- **AI 에이전트**: “체육관 가는 길 알려줘”, “3층 2반 어디야?”, “내 분실물 글 보여줘”, “오늘 급식 이미지 보여줘”, “학생생활규정 벌점 기준 요약해줘” 등 **대화로 모든 액션** 실행.
+* **클라이언트(UI)**: 반응형 웹(PC/모바일), 카드형 목록(오렌지+화이트, 당근마켓 스타일).
+* **백엔드**: API 게이트웨이(FastAPI 권장) + DB(PostgreSQL) + 객체스토리지(이미지 업로드, e.g., S3 호환) + 캐시(Redis).
+* **AI 계층(멀티 에이전트)**: 오케스트레이터(라우터) + 기능별 전문 에이전트(분실물, 급식, 학교 지식, 내비, 계정/권한, 모더레이션, 비전 QA, 운영/분석).
+* **외부 연동**: NEIS 급식 OpenAPI, 학교 문서/규정 PDF·공지 RAG, (선택) 시간표 변동 데이터 소스.
+* **시간대**: `Asia/Seoul` 고정. NEIS 캐시 프리페치: 매일 06:00/11:00 KST.
 
----
-
-## 2) 시스템 아키텍처(개요)
 ```
-[React(PWA) + Tailwind]  ←→  [FastAPI(ASGI)]  ←→  [PostgreSQL]
-        │                           │
-        │(file upload)              ├─[Object Storage(S3 호환)]  ← 원본 이미지
-        │                           ├─[RAG Vector Store]        ← 학교 규정/지도/교무실
-        │                           └─[AI Providers]            ← 이미지 생성/LLM
-```
-- **PWA**로 오프라인 캐시(목록/정적 자원), 알림(Firebase Cloud Messaging 가능) 지원.
-- **RAG**를 위한 메타데이터: 문서 출처(규정 PDF/학교 안내문), 교실 좌표, 층 정보, 교무실 위치.
-
----
-
-## 3) 데이터 모델 (초안)
-> SQLAlchemy 기준, 실제 마이그레이션은 Alembic 사용 권장
-
-### 3.1 Users
-- `id (PK)`, `role (enum: guest/student/teacher/admin)`, `email`, `display_name`, `phone (nullable)`, `password_hash (nullable if OAuth)`, `created_at`.
-
-### 3.2 LostItem(분실물)
-- `id (PK)`, `title`, `description`, `status (enum: LOST, KEEPING, RESOLVED)`, `owner_id (FK Users)`, `created_at`, `updated_at`.
-
-### 3.3 LostItemImage
-- `id (PK)`, `lost_item_id (FK)`, `url`, `width`, `height`, `uploaded_by (FK Users)`.
-
-### 3.4 Comment
-- `id (PK)`, `lost_item_id (FK)`, `author_id (FK Users)`, `content`, `created_at`.
-
-### 3.5 ContactBridge(연락교환 요청)
-- `id (PK)`, `lost_item_id (FK)`, `finder_id (FK Users)`, `owner_id (FK Users)`, `message`, `status(enum: OPEN, CONNECTED, CLOSED)`, `created_at`.
-
-### 3.6 AuditLog
-- `id`, `actor_id`, `action`, `target_type`, `target_id`, `ip`, `ua`, `created_at`.
-
-### 3.7 Meal
-- `id`, `date`, `raw_text`, `calorie (nullable)`, `allergens (nullable)`, `source(meta)`.
-
-### 3.8 MealImageGen
-- `id`, `date`, `prompt`, `image_url`, `model_name`, `status(enum: PENDING, DONE, FAIL)`, `created_at`.
-
-### 3.9 NavigationMap(교실/교무실 정보)
-- `id`, `type(enum: CLASSROOM, OFFICE, FACILITY)`, `name`, `floor`, `building`, `coords(json)`, `notes`.
-
----
-
-## 4) API 스펙 (요약)
-### 4.1 Auth
-- `POST /api/auth/signup` — 학생/교사 가입(정책상 초대코드/교내메일 제한 가능)
-- `POST /api/auth/login` — JWT 발급
-- `GET  /api/auth/me` — 내 정보
-
-### 4.2 Lost & Found
-- `POST /api/lost` — 분실물 등록(제목/설명/상태)
-- `POST /api/lost/{id}/images` — 이미지 업로드(멀티파트)
-- `GET  /api/lost` — 목록(페이지네이션, `q`, `status`, `sort=latest|status`)
-- `GET  /api/lost/{id}` — 상세
-- `PATCH /api/lost/{id}` — 작성자 또는 관리자 수정
-- `DELETE /api/lost/{id}` — 관리자/작성자(정책)
-- `POST /api/lost/{id}/comments`
-- `GET  /api/lost/{id}/comments`
-- `POST /api/lost/{id}/status` — 상태 변경(관리자 우선)
-- `GET  /api/lost/mine` — 내가 등록한 글
-
-### 4.3 Meals
-- `GET  /api/meals?date=YYYY-MM-DD` — 텍스트 급식
-- `POST /api/meals/{date}/image` — 이미지 생성 트리거(관리자/스케줄러)
-- `GET  /api/meals/{date}/image` — 생성 결과 조회
-
-### 4.4 Map/Rules
-- `GET  /api/map/search?q=교무실/교실명`
-- `GET  /api/rules?q=벌점/지각` — 규정 RAG 답변(출처 포함)
-
-### 4.5 Agent Tools (서버 함수)
-- `POST /api/agent/invoke` — 에이전트 오케스트레이터 엔드포인트
-- (내부) 툴: `navigate(page)`, `lost.search`, `lost.update`, `meals.get`, `meals.genImage`, `user.update`, `map.find`, `rules.ask`, `notify.push`
-
----
-
-## 5) 프론트엔드 라우팅 & UI (Daangn 스타일)
-- `/` 홈: 상단 탭(분실물｜급식｜도움말) + **에이전트 플로팅 버튼**(음성/텍스트)
-- `/lost` 카드 목록: 큰 썸네일 + 짧은 제목/상태 뱃지, 무한 스크롤
-- `/lost/new` 등록 폼: 모바일 1열, 이미지 드래그&드롭/카메라
-- `/lost/:id` 상세: 큰 이미지 캐러셀, 설명, 댓글, 연락 버튼
-- `/meals` 캘린더 탭: 오늘/주간 텍스트 + “이미지 보기” 토글
-- `/map` 간단 검색: “2층 1반”, “수학과 교무실” → 결과 핀/텍스트
-- 공통: **오렌지(#FF7800)+화이트** 베이스, 라운디드 카드, 상단 고정 검색바
-
-### 컴포넌트 가이드
-- Card/LargeImageCard, Badge(status), BottomSheet(Action), FloatingAgentButton, Toast/Confirm, EmptyState
-
----
-
-## 6) 검색 & 정렬
-- PostgreSQL `tsvector`(한국어: ngram 기반) + `pg_trgm` 인덱스
-- 필드 가중치: `title^3 + description^1`
-- 상태/최신 정렬 조합, **쿼리 캐시**(10~30초)
-
----
-
-## 7) 보안·개인정보·운영 정책
-- **이미지 스캔**(확장자/EXIF/간단한 유해성 필터), **용량 제한**(예: 5~10MB)
-- **RBAC**: 관리자만 일괄 삭제/상태 변경, 일반 사용자는 본인 글만 수정/삭제
-- **연락처 공유 Opt-in**: 연락 교환은 양자 동의 후 메시지 브리지에서만 노출
-- **감사 로그**: 삭제/상태 변경/권한 행위 전부 기록
-- **속도 제한**: 글 등록/댓글 스팸 방지
-- **신고 기능**: 부적절한 사진/글 신고 → 관리자 큐
-- **법적/학교 규정 준수**: 학생 사진 처리 시 동의 정책 명시
-
----
-
-## 8) 급식 파이프라인 (텍스트→이미지)
-1) **데이터 수집**: NEIS 급식 API로 날짜별 메뉴/알레르기 수집
-2) **정제**: 메뉴 텍스트 정규화(이모지/괄호 제거), 카테고리 묶기(국/반찬/디저트)
-3) **프롬프트 생성**: 예) `"한국 고등학교 급식판, 스테인리스 식판 5칸, 밥(흰쌀밥), 김치, 미역국, 불고기, 멸치볶음, 포도. 촬영 각도: 45도. 학교 급식 느낌, 과장되지 않은 현실적인 조명."`
-4) **이미지 생성**: 외부 API 호출(모델·해상도는 환경변수로 분리)
-5) **검증/캐싱**: 생성 실패 시 텍스트만 노출, 성공 시 CDN 캐시
-
----
-
-## 9) 총괄 AI 에이전트 설계 (Agents.md)
-### 9.1 오케스트레이터 개요
-- **패턴**: ReAct(Reason+Act) + Tool-Calling
-- **목표**: 대화 의도→도구 호출→검증→UI 반응(네비게이션/토스트/모달)
-
-### 9.2 시스템 프롬프트(요약)
-```
-역할: Sphere-PGHS 웹의 음성/채팅 에이전트. 학생의 터치를 최소화한다.
-원칙:
-- 사실 우선, 출처 제시(규정/지도)
-- 위험 행위, 개인정보 노출 금지
-- 실패 시 솔직한 사과와 대안 제시
-행동 지침:
-- 페이지 이동은 navigate(page) 도구 사용
-- 분실물 검색/수정은 lost.* 도구
-- 급식 텍스트/이미지는 meals.* 도구
-- 규정/지도/교무실은 rules.ask, map.find 도구
-- 사용자 의도 모호 → 1문장 재확인 후 기본값 실행
-응답 스타일:
-- 한국어, 간결한 문장 + 즉시 실행 버튼/딥링크 제시
+사용자 ↔ UI Copilot(내비) ↔ 오케스트레이터 ↔ [분실물/급식/지식/계정/모더레이션/비전QA/운영] 에이전트 ↔ 도구(DB, API, 파일, 캐시)
 ```
 
-### 9.3 툴 스키마(예시)
+---
+
+## 1) 비전(Goals) & 비범위(Non‑Goals)
+
+**Goals**
+
+1. 대화/음성/텍스트 명령 중심으로 사이트 전 영역 제어(페이지 이동/검색/정렬/상세 열람/상태 변경 등).
+2. **급식**: NEIS 텍스트 출력 + **실제 급식판 느낌의 AI 이미지** 자동 생성(알레르기 표기 포함).
+3. **분실물**: 학생이 직접 등록·검색·조회, 관리자는 전체 수정·삭제. 댓글/연락처 연결.
+4. **학교 지식**: 생활규정, 교무실·교실 위치, 시간표 변동, 캠퍼스 내 길찾기/층수 안내.
+
+**Non‑Goals**
+
+* 학사행정 승인·공식 민원 처리(링크 안내까지만).
+* 얼굴 인식 식별(개인 식별 비전은 사용하지 않음).
+
+---
+
+## 2) 에이전트 라인업(역할/책임)
+
+### 2.1 오케스트레이터(Orchestrator)
+
+* **역할**: 사용자의 발화를 \*\*의도(Intent)\*\*로 분류하고, 적절한 기능 에이전트에 라우팅. 실패 시 재프롬프트/백오프.
+* **입력**: 사용자 발화(자연어), 대화 상태(Session), UI 컨텍스트(현재 페이지·선택 필터 등).
+* **출력**: `intent`, `tool_call` 또는 `response`.
+* **핵심 로직**: 우선 규칙 → 통계적 라우팅(의도 스코어) → 컨텍스트 결합(RAG) → 함수호출.
+
+### 2.2 UI Copilot(내비게이터) 에이전트
+
+* **역할**: "\~페이지로 이동", "정렬 바꿔", "내 글 모아봐" 등 UI 지시 수행.
+* **도구**: `goto_page`, `set_filter`, `set_sort`, `open_item`, `open_profile`, `open_admin_panel` 등.
+* **결과**: UI 상태 변경과 함께 간단 피드백(무엇을 바꿨는지).
+
+### 2.3 분실물(Lost\&Found) 에이전트
+
+* **역할**: 등록/검색/조회/상태변경/댓글/신고.
+* **도구**: `create_item`, `search_items`, `get_item`, `update_item`, `update_item_status`, `delete_item`, `add_comment`, `list_user_items`, `upload_image`.
+* **정책**:
+
+  * 전화번호는 자동 마스킹(예: 010‑1234‑\*\*\*\*).
+  * 개인정보/욕설 모더레이션 통과 필요.
+
+### 2.4 급식(Meals) 에이전트
+
+* **역할**: 날짜별 급식 텍스트 + **AI 이미지 생성**(식판 레이아웃, 반찬/국/밥 시각화, 알레르기 마크).
+* **도구**: `get_meals(date|range)`, `generate_meal_tray_image(menu_json)`, `parse_allergen_codes`.
+* **정책**: 알레르기 1\~19 표기, 영양정보 표는 옵션. 캐싱.
+
+### 2.5 학교 지식(KB/RAG) 에이전트
+
+* **역할**: 생활규정, 교무실/교실 위치, 층 안내, 시간표 변동 Q/A.
+* **지식원**: PDF/문서/공지/배치도 → 텍스트 추출 → 청소·가공 → 임베딩 인덱스(Vector DB).
+* **도구**: `kb_search(query)`, `kb_get(section)`, `get_timetable(date)`, `get_timetable_changes(date)`.
+* **정책**: 답변 시 \*\*출처(문서명/개정일)\*\*를 UI에 표시.
+
+### 2.6 계정/권한(Auth/RBAC) 에이전트
+
+* **역할**: 로그인/프로필 수정, 역할 부여(관리자), 세션 관리.
+* **정책**: RBAC(학생=기본, 관리자=교사/자치회 임원). 관리자 전용 버튼 노출.
+
+### 2.7 모더레이션(Moderation) 에이전트
+
+* **역할**: 이미지/텍스트 욕설, 개인정보 과다 노출, 스팸 감지.
+* **행동**: 경고→가림 표시→관리자 알림→차단까지 단계적.
+
+### 2.8 비전 QA(Vision‑QA) 에이전트
+
+* **역할**: 분실물 사진 품질 검사(흔들림/어둠/낮은 해상도), 자동 보정 제안, 카테고리 추출(예: 가방/필통/옷).
+
+### 2.9 운영/분석(Ops/Analytics) 에이전트
+
+* **역할**: 쿼리 실패율, 도구 호출 지연, 인기 검색어, 신고 빈도 등 대시보드 제공.
+
+---
+
+## 3) 의도(Intent) 정의 & 예시 발화
+
+> 다국어 가능하나 **기본 한국어**. 정규식/룰 기반 프리필터 + 분류기(softmax) 혼합.
+
+| Intent             | 설명     | 예시 발화(학생)               | 라우팅        |
+| ------------------ | ------ | ----------------------- | ---------- |
+| `NAV.GOTO_PAGE`    | 페이지 이동 | "분실물 목록 보여줘", "급식 페이지로" | UI Copilot |
+| `LOST.CREATE`      | 분실물 등록 | "지갑 잃어버렸어, 등록할래"        | 분실물        |
+| `LOST.SEARCH`      | 검색/필터  | "파란 필통 찾아줘", "보관중만"     | 분실물        |
+| `LOST.DETAIL`      | 상세 열람  | "두 번째 카드 열어"            | 분실물+UI     |
+| `LOST.STATUS`      | 상태 변경  | "이건 보관중으로 바꿔"           | 분실물        |
+| `MEAL.TODAY/DATE`  | 급식 조회  | "오늘 점심 뭐야?", "26일 급식"   | 급식         |
+| `MEAL.IMAGE`       | 급식 이미지 | "급식 사진으로 만들어줘"          | 급식         |
+| `KB.RULES`         | 생활규정   | "교복 규정 알려줘"             | KB/RAG     |
+| `KB.MAP`           | 위치/층   | "국어과 교무실 어디야?"          | KB/RAG+내비  |
+| `TIMETABLE.CHANGE` | 시간표 변동 | "내일 시간표 바뀌었어?"          | KB/RAG     |
+| `ACCOUNT.UPDATE`   | 프로필 수정 | "닉네임 바꿔줘"               | Auth       |
+| `ADMIN.MOD`        | 삭제/차단  | "욕설 댓글 삭제"              | 모더레이션      |
+
+의도 스키마(요약):
+
 ```json
 {
-  "navigate": {
-    "description": "앱 내 특정 페이지로 이동",
-    "params": {"page": "home|lost|lost_new|meals|map|profile|admin"}
-  },
-  "lost.search": {
-    "description": "분실물 검색",
-    "params": {"q": "string", "status": "LOST|KEEPING|RESOLVED", "sort": "latest|status"}
-  },
-  "lost.update": {
-    "description": "분실물 상태/내용 업데이트",
-    "params": {"id": "number", "patch": "object"}
-  },
-  "meals.get": {
-    "description": "특정 날짜 급식 가져오기",
-    "params": {"date": "YYYY-MM-DD"}
-  },
-  "meals.genImage": {
-    "description": "급식 이미지 생성 트리거",
-    "params": {"date": "YYYY-MM-DD"}
-  },
-  "user.update": {
-    "description": "회원 정보 수정",
-    "params": {"fields": "object"}
-  },
-  "map.find": {
-    "description": "교실/교무실 위치 검색",
-    "params": {"q": "string"}
-  },
-  "rules.ask": {
-    "description": "학생생활규정 질의응답(RAG)",
-    "params": {"q": "string"}
-  },
-  "notify.push": {
-    "description": "푸시/알림 트리거",
-    "params": {"user_id": "number", "title": "string", "body": "string"}
-  }
+  "intent": "MEAL.TODAY",
+  "slots": {"date": "2025-08-23"},
+  "confidence": 0.91,
+  "context": {"page": "home", "userRole": "student"}
 }
 ```
 
-### 9.4 예시 대화 플로우
-- 사용자: “내가 올린 글 보여줘” → `lost.search({owner=me})` → 결과 카드 3개 + “상세 열기” 버튼
-- 사용자: “2층 1반 어디야?” → `map.find({q:"2층 1반"})` → 층/건물/좌표 출력 + “지도로 보기” 버튼
-- 사용자: “오늘 급식 사진 보여줘” → `meals.get` → 없으면 `meals.genImage` 트리거 후 텍스트 우선 표시
-
-### 9.5 안전장치
-- **개인연락처 자동 차단**(채팅 내 노출 금지, ContactBridge로만 교환)
-- **삭제/상태변경 전 재확인**(confirm) + 감사로그 기록
-- **규정 답변 시 출처 스니펫 제공**(문장+문서명+절 번호)
-
-### 9.6 평가(오프라인 테스트 시나리오)
-- 20개 대표 시나리오(네비게이션/검색/수정/규정/RAG/실패복구) **성공률 ≥ 95%**
-- 라운드트립 시간(요청→UI 반응) 목표: 체감 1.5초 이내(네트워크 상황 제외)
-
 ---
 
-## 10) RAG 데이터 구축
-- **소스**: 학생생활규정, 교무실/교실 배치도, 행사 안내문, 자주 묻는 질문(FAQ)
-- **전처리**: PDF→텍스트, 문단/조항 단위 chunk(512~1024 tokens), 메타데이터(조항번호/페이지)
-- **인덱스**: cosine-sim + rerank, 최신본 스냅샷 버전 태깅
-- **UI**: 답변 하단에 “출처 펼치기” 버튼으로 근거 2~3개 노출
+## 4) 도구(툴)·함수 호출 명세
 
----
+> 모든 툴 호출은 **JSON Schema** 명세와 타입 검증 필수. 실패 시 재시도(max 2) 후 친절한 오류 메시지.
 
-## 11) 배포/운영
-- **환경변수**: `DATABASE_URL`, `STORAGE_BUCKET`, `JWT_SECRET`, `MEAL_API_KEY`, `IMG_API_KEY` 등
-- **CI/CD**: GitHub Actions → Cloudtype 자동 배포, 마이그레이션 단계 포함
-- **모니터링**: Sentry(프론트/백), 헬스체크 `/healthz`
-- **백업**: DB 일일 스냅샷, 오브젝트 스토리지 수명주기(예: 180일 뒤 아카이브)
+### 4.1 UI 제어
 
----
-
-## 12) 성능 & 접근성
-- 이미지 **자동 리사이즈/웹프**(서버/에지) + LQIP
-- 리스트 **IntersectionObserver**로 무한 스크롤, 요청 병합
-- **a11y**: 키보드 포커스, 색 대비(오렌지 대비 확보), 스크린리더 라벨
-
----
-
-## 13) QA 체크리스트(발표 전)
-- [ ] 비로그인 열람 범위/정책 점검
-- [ ] 업로드 제한/부적절 콘텐츠 신고 테스트
-- [ ] 관리자 삭제/상태 변경 감사로그 확인
-- [ ] 에이전트 도구별 실패 케이스(네트워크/권한) 복구 메시지
-- [ ] 급식 이미지 생성 실패 시 우아한 폴백
-- [ ] 모바일 Safari/Chrome, 저대역폭 테스트
-
----
-
-## 14) 구현 스니펫(요약)
-### 14.1 SQLAlchemy 모델(발췌)
-```python
-class LostItem(Base):
-    __tablename__ = "lost_items"
-    id = Column(Integer, primary_key=True)
-    title = Column(String(120), index=True, nullable=False)
-    description = Column(Text)
-    status = Column(Enum("LOST","KEEPING","RESOLVED", name="lost_status"), default="LOST")
-    owner_id = Column(ForeignKey("users.id"), index=True)
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, onupdate=func.now())
+```ts
+function goto_page(name: "home"|"lost"|"meals"|"agent"|"admin", params?: object): void
+function set_sort(list: "lost", key: "latest"|"status", order?: "asc"|"desc"): void
+function set_filter(list: "lost", filter: {status?: "보관중"|"분실됨", q?: string}): void
+function open_item(itemId: string): void
 ```
 
-### 14.2 FastAPI Router(발췌)
-```python
-@router.get("/lost")
-async def list_lost(q: str = "", status: str | None = None, sort: str = "latest", page: int = 1):
-    # FTS + 정렬 조합, 페이지네이션
-    ...
+### 4.2 분실물 CRUD
+
+```ts
+function create_item(input: {
+  title: string; description: string; images: string[];
+  status: "보관중"|"분실됨"; place?: string;
+  lostFoundDate?: string; contact?: string; category?: string;
+}): {id: string}
+
+function search_items(query: {q?: string; status?: "보관중"|"분실됨"; page?: number; size?: number}): {
+  total: number; items: Array<{id:string; title:string; thumb:string; status:string; createdAt:string}>
+}
+
+function get_item(id: string): {
+  id: string; title: string; description: string; images: string[]; status: string;
+  place?: string; reporter:{id:string; nickname:string}; contactMasked?: string;
+  comments: Array<{id:string; author:string; text:string; createdAt:string}>
+}
+
+function update_item(id: string, patch: Partial<{
+  title: string; description: string; images: string[]; status: "보관중"|"분실됨"|"해결";
+  place?: string; contact?: string; category?: string;
+}>): {ok: boolean}
+
+function update_item_status(id: string, status: "보관중"|"분실됨"|"해결"): {ok:boolean}
+function delete_item(id: string): {ok:boolean}
+function add_comment(itemId: string, text: string): {id:string}
+function list_user_items(userId: string): {items: Array<{id:string; title:string; status:string; createdAt:string}>}
+function upload_image(fileB64: string): {url: string, width:number, height:number}
 ```
 
-### 14.3 에이전트 툴 선언(발췌)
-```python
-Tool(
-  name="lost.search",
-  description="분실물 검색",
-  args_schema=LostSearchArgs,
-  func=lost_search_handler,
-)
+### 4.3 급식 & 이미지 생성
+
+```ts
+function get_meals(input: {date?: string; from?: string; to?: string}): {
+  date: string; menu: Array<{name:string; allergens?: number[]}>; calories?: number; nutrition?: Record<string,string>
+}
+
+function generate_meal_tray_image(menu: {
+  date: string; items: Array<{name:string; slot:"rice"|"soup"|"main"|"side"|"dessert"; allergens?: number[]}>;
+  style?: "photoreal"|"illustration"; notes?: string
+}): {imageUrl: string}
+
+function parse_allergen_codes(raw: string): Array<{name:string; allergens:number[]}> // NEIS 문자열 → 구조화
+```
+
+### 4.4 학교 지식(RAG) & 시간표
+
+```ts
+function kb_search(q: string, k?: number): Array<{chunk:string; source:string; page?:number; updatedAt?:string}>
+function kb_get(section: string): {text:string; source:string; updatedAt?:string}
+function get_timetable(date: string): {classes: Array<{period:number; subject:string; room:string; teacher?:string}>}
+function get_timetable_changes(date: string): {changes: Array<{class:string; period:number; change:string; note?:string}>}
+```
+
+### 4.5 계정/권한
+
+```ts
+function get_profile(): {id:string; nickname:string; role:"student"|"admin"}
+function update_profile(patch: Partial<{nickname:string; contact:string}>): {ok:boolean}
+function ensure_admin(): {ok:boolean} // 실패 시 에러 throw
+```
+
+### 4.6 모더레이션/품질
+
+```ts
+function moderate_text(text: string): {ok:boolean; reason?:string}
+function moderate_image(url: string): {ok:boolean; reason?:string}
+function image_quality(url: string): {score:number; tips?:string[]}
 ```
 
 ---
 
-## 15) 마일스톤(권장 순서)
-1) 스캐폴딩(라우팅/디자인 토큰/인증) → 2) 분실물 CRUD + 업로드 → 3) 검색/정렬 → 4) 급식 텍스트 → 5) 에이전트 MVP(네비/검색) → 6) 규정 RAG → 7) 급식 이미지 생성 → 8) 관리자/감사로그 → 9) PWA/알림 → 10) QA/발표 데모 시나리오
+## 5) 데이터 모델(DB)
+
+### 5.1 테이블
+
+* `users(id, nickname, email, role, created_at)`
+* `lost_items(id, title, description, status, place, category, contact_encrypted, reporter_id, created_at, updated_at)`
+* `lost_images(id, item_id, url, w, h)`
+* `lost_comments(id, item_id, author_id, text, created_at)`
+* `audit_logs(id, actor_id, action, target_type, target_id, payload_json, created_at)`
+* `meals_cache(date, json, created_at)`
+* `kb_sources(id, name, type, url, hash, updated_at)`
+
+### 5.2 인덱싱/검색
+
+* `lost_items(title, description, category)` 풀텍스트 인덱스(KR 형태소 추천).
+* 상태/최신순 정렬 컬럼별 인덱스 추가.
+
+### 5.3 개인정보 처리
+
+* 연락처는 **암호화 저장** 후 뷰 계층에서 마스킹.
+* 로그에 PII 금지.
 
 ---
 
-## 16) 데모 시나리오(발표용)
-- **시작**: 홈에서 “에이전트 버튼” 터치 없이 음성: “오늘 급식 보여줘” → 텍스트/이미지
-- **분실물**: “어제 올린 회색 후드티 찾아줘” → 카드 1~2개 → “상태를 보관중으로 바꿔줘”
-- **내비게이션**: “수학과 교무실로 이동” → `/map` 결과 표시 → “즐겨찾기 등록”
-- **규정**: “모자 착용 규정 요약” → 2문장 요약 + 출처 버튼
+## 6) RBAC(권한)
+
+| 액션            |   학생(기본) |   관리자 |
+| ------------- | -------: | ----: |
+| 분실물 등록/조회/검색  |        ✅ |     ✅ |
+| 본인 글 수정/삭제    |        ✅ | ✅(모두) |
+| 상태 변경         |  ✅(본인 글) | ✅(모두) |
+| 댓글 작성/삭제      | ✅(본인 댓글) | ✅(모두) |
+| 욕설/개인정보 노출 삭제 |        ❌ |     ✅ |
+| 사용자 차단        |        ❌ |     ✅ |
 
 ---
 
-### 부록 A) UI 톤앤매너
-- 배경 화이트, 포인트 오렌지(#FF7800), 액션 버튼은 솔리드/둥근 모서리
-- 카드의 썸네일 비율 4:3, 제목 1줄 ellipsis, 상태 뱃지 색상: LOST=red, KEEPING=blue, RESOLVED=gray
+## 7) 급식 파이프라인(NEIS) & 이미지 생성
 
-### 부록 B) 용어 규칙
-- “분실됨/보관중/종결” 통일, 연락처는 “연락 교환”으로 표기
+1. **쿼리 빌드**: 날짜·학교코드(시도교육청코드 + 표준학교코드), Type=json.
+2. **정규화**: `메뉴명[알레르기번호]` → 구조화(`parse_allergen_codes`).
+3. **캐시**: `meals_cache`에 저장(당일·익일 프리페치).
+4. **UI**: 텍스트 카드 + 알레르기 배지(1\~19).
+5. **이미지 생성**: 식판 슬롯 매핑(밥/국/메인/반찬/후식). 동적 캡션(예: "2025‑08‑22 PGHS 점심").
+6. **안전**: 모델 출력에 과장/허위 방지(텍스트 원문·출처 병기).
 
-### 부록 C) 발표 체크(문구)
-- “Sphere-PGHS는 **에이전트-우선** UX로, 학생의 터치 없이 **말로 하는 웹**을 지향합니다.”
+알레르기 번호(요약): 1 난류, 2 우유, 3 메밀, 4 땅콩, 5 대두, 6 밀, 7 고등어, 8 게, 9 새우, 10 돼지고기, 11 복숭아, 12 토마토, 13 아황산류, 14 호두, 15 닭고기, 16 쇠고기, 17 오징어, 18 조개류, 19 잣.
 
+---
+
+## 8) 학교 지식(KB/RAG) 구축
+
+* **수집**: 생활규정 PDF, 캠퍼스 맵, 교무실·교실 안내, 학사일정/시간표 변동 공지.
+* **정제**: OCR→클린징(페이지·항목 헤더 보존), 민감정보 제거.
+* **임베딩**: 문단 단위(300\~800자) + 메타(문서명/개정일/페이지).
+* **검색**: top‑k(5) + 재랭킹.
+* **답변**: 출처 카드를 항상 함께 노출.
+* **예시 질의**: "체육복 허용 요일?", "과학실 몇 층?", "국어과 교무실 어디?", "오늘 1학년 시간표 변경?".
+
+---
+
+## 9) 프롬프트 설계(핵심 가드 포함)
+
+### 9.1 오케스트레이터 System Prompt(발췌)
+
+* 당신은 Sphere‑PGHS의 **라우터**입니다.
+* 사용자 의도를 아래 집합에서 선택하고, **가능하면 도구 호출**로 해결하세요.
+* 학교 관련 정보가 확실하지 않으면 `KB` 먼저 조회 후 답하세요.
+* 미성년자 서비스이므로 **개인정보·욕설**을 엄격히 제한합니다.
+* 출력 포맷:
+
+```json
+{"intent":"<INTENT>", "reason":"<짧게>", "tool_call": {"name":"<tool>", "args":{...}}}
+```
+
+### 9.2 분실물 에이전트 Developer Prompt(발췌)
+
+* 제목은 20\~40자 권장, **핵심 특징**(색상/브랜드/특징) 자동 제안.
+* 이미지 품질이 낮으면 업로드 직후 `image_quality`를 호출해 개선 팁을 보여주세요.
+* 댓글 내 연락처는 자동 마스킹합니다.
+* 관리자만 타인 글 삭제/상태 강제 변경 가능합니다.
+
+### 9.3 급식 에이전트 Developer Prompt(발췌)
+
+* `get_meals` 결과를 그대로 요약하지 말고 **메뉴 분류** 후 보기 좋게 정리.
+* 알레르기 배지(숫자→한글명)와 **원문 출처** 링크를 함께 표시.
+* 이미지 생성 시 **없는 메뉴를 창작하지 말 것**. 원문 JSON만 시각화.
+
+### 9.4 KB 에이전트 Developer Prompt(발췌)
+
+* 답변마다 `source`(문서명/개정일/페이지)를 UI에 명시.
+* 위치 질의는 **층/동/방향**까지 구체.
+
+---
+
+## 10) 오류 처리 & 회복
+
+* 툴 호출 실패: 즉시 재시도(지수 백오프)→대체 경로(캐시/최근 조회)→사과+가이드.
+* 권한 오류: 이유와 함께 로그인/권한 요청 흐름 제시.
+* RAG 무매칭: 유사 항목·연관 문서 제시.
+* 이미지 생성 실패: 텍스트 카드만 우선 표시, 이미지 재생성 버튼 제공.
+
+---
+
+## 11) UX 지침(브랜드/컴포넌트)
+
+* **메인 컬러**: 오렌지(#FF7A00) + 화이트, 회색 보조.
+* **카드**: 큰 썸네일 왼쪽, 오른쪽에 제목/상태 배지/등록일. 모바일 1열, 태블릿 2열, 데스크톱 3열.
+* **정렬/필터**: 상단 고정 바(최신순·상태, 검색창).
+* **접근성**: 버튼 최소 44px, 색 대비 WCAG AA.
+* **알림**: 작업 성공/실패 토스트. 파괴적 액션(삭제)은 모달 확인.
+
+---
+
+## 12) 대화 플로우(샘플)
+
+**A) 분실물 등록**
+
+1. 사용자: "검은색 나이키 지갑 분실 등록해줘. 사진도 올릴게."
+2. Orchestrator→`LOST.CREATE` → 분실물 에이전트 `create_item` 호출.
+3. 에이전트: 품질검사→요약 태그 자동 생성→카드 생성.
+
+**B) 급식 이미지**
+
+1. 사용자: "내일 급식 사진으로 보여줘"
+2. Meals: `get_meals({date:내일})`→`generate_meal_tray_image`→ 텍스트+이미지 카드.
+
+**C) 학교 위치**
+
+1. 사용자: "과학실 어디야?"
+2. KB: `kb_search`→ 층/동/호수 안내 + 지도 카드.
+
+---
+
+## 13) 테스트 전략
+
+* **단위**: 툴 스키마 검증, 파서(알레르기), RBAC 가드.
+* **통합**: 의도→툴 호출 경로(시나리오), 실패 재시도/백오프.
+* **회귀**: NEIS 스키마 변경 감지 테스트(주 1회).
+* **프롬프트 평가**: synthetic 발화 300문장 세트(오탑/줄임말 포함)로 정밀도/재현율 체크.
+
+---
+
+## 14) 배포·운영 체크리스트
+
+* 환경변수: `NEIS_API_KEY`, `PGHS_ATPT_CODE`, `PGHS_SCHUL_CODE`, `DB_URL`, `STORAGE_BUCKET`, `EMBEDDING_MODEL`, `IMAGE_MODEL` 등.
+* 캐시 TTL: 급식 24h, KB 12h, 검색 5m.
+* 레이트리밋: 사용자 60 req/min, 이미지생성 3 req/min.
+* 감사로그: 관리자 액션 필수 기록.
+* 백업: DB 일 1회, 이미지 스토리지 주 1회.
+
+---
+
+## 15) 예시 API 계약(OpenAPI 스타일 발췌)
+
+```yaml
+GET /api/lost?status=보관중&q=필통&page=1&size=20
+200: { total: 13, items: [{id, title, thumb, status, createdAt}] }
+
+POST /api/lost
+body: {title, description, images[], status}
+201: {id}
+
+GET /api/meals?date=2025-08-22
+200: {date, menu:[{name, allergens[]}], calories, nutrition}
+```
+
+---
+
+## 16) 보안·윤리
+
+* 미성년자 대상 서비스: 개인정보 최소 수집, 연락처 마스킹, 위치정보 공유 금지.
+* 이미지·텍스트 모더레이션 필수 패스 후 공개.
+* RAG 답변은 **출처 표시**로 허위 방지.
+
+---
+
+## 17) To‑Do(초기 스프린트)
+
+1. NEIS 키 발급 및 학교코드 환경변수 세팅.
+2. DB 스키마 마이그레이션 + 업로드 파이프라인.
+3. 오케스트레이터 의도 분류기 v1(룰+소프트맥스) 탑재.
+4. 급식 파서/이미지 생성 템플릿 확정.
+5. KB 초기 크롤/임베딩(생활규정·교무실/교실 배치도).
+6. UI 카드 리스트 + 내비 에이전트 연결.
+7. 모더레이션 가드라인 적용.
+
+---
+
+## 18) 부록 A — 알레르기 배지 매핑 코드 스니펫(의사코드)
+
+```python
+ALLERGEN = {1:"난류",2:"우유",3:"메밀",4:"땅콩",5:"대두",6:"밀",7:"고등어",8:"게",9:"새우",10:"돼지고기",11:"복숭아",12:"토마토",13:"아황산류",14:"호두",15:"닭고기",16:"쇠고기",17:"오징어",18:"조개류",19:"잣"}
+
+def parse(raw: str):
+    items = []
+    for token in raw.split("<br/>"):
+        # 예: "닭갈비(5.6.15.16.)"
+        name, codes = token.split("(") if "(" in token else (token, "")
+        nums = [int(x) for x in codes.replace(")","" ).split(".") if x.isdigit()]
+        items.append({"name":name.strip(), "allergens":nums})
+    return items
+```
+
+---
+
+## 19) 부록 B — UI 상태어휘(샘플)
+
+* 정렬: 최신순/상태순.
+* 상태 배지: 보관중/분실됨/해결.
+* 필터: 상태, 키워드.
+* 접근 키: `/` 검색, `g l` 분실물, `g m` 급식.
+
+---
+
+본 문서는 개발자가 **바이브 코딩**으로 즉시 구현을 시작할 수 있도록, 역할/도구/데이터/정책을 최대한 구체화했습니다. 필요 시 본 문서에 **툴 스키마/프롬프트**를 그대로 복사해 사용하세요.
