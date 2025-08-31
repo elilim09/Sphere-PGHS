@@ -1,14 +1,13 @@
 from fastapi import FastAPI
+from routers import users, items, admin
 
-from routers import bob, lost
-from routers import lost
+app = FastAPI(title="Sphere-PGHS", version="1.0.0")
 
-app = FastAPI()
-
-app.include_router(bob.router, prefix="/bob", tags=["bob"])
-app.include_router(lost.router, prefix="/lost", tags=["lost"])
-app.include_router(lost.router, prefix="/ai", tags=["ai"])
+# 라우터 등록
+app.include_router(users.router, prefix="/users", tags=["Users"])
+app.include_router(items.router, prefix="/items", tags=["Items"])
+app.include_router(admin.router, prefix="/admin", tags=["Admin"])
 
 @app.get("/")
-async def root():
-    return {"message": "Welcome to Sphere-PGHS API"}
+def root():
+    return {"message": "Sphere-PGHS API 서버 동작 중"}
