@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>분실물 검색</title>
+</head>
+<body>
+    <h1>분실물 검색</h1>
+    <form action="/lost/search" method="get">
+        <input type="text" name="query" value="{{ query }}">
+        <input type="submit" value="검색">
+    </form>
+
+    <h2>검색 결과</h2>
+    <ul>
+        {% for item in lost_items %}
+        <li>
+            <h2>{{ item.name }}</h2>
+            <p>{{ item.description }}</p>
+            <p><small>등록일: {{ item.timestamp }}</small></p>
+            <img src="{{ item.image_url }}" alt="{{ item.name }}" width="200">
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
