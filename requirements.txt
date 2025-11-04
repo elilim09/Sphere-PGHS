@@ -3,3 +3,4 @@ uvicorn[standard]
 openai
 httpx
 jinja2
+python-dotenv
