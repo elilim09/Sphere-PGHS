@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>오늘의 급식</title>
+</head>
+<body>
+    <h1>{{ meal_date }} 급식 정보</h1>
+    <ul>
+        {% for meal in meal_list %}
+        <li>
+            {{ meal | safe }}
+            <a href="/?meal_description={{ meal | urlencode }}">이미지 보기</a>
+        </li>
+        {% endfor %}
+    </ul>
+
+    {% if image_url %}
+    <img src="{{ image_url }}" alt="{{ meal_description }}" width="512" height="512">
+    <br>
+    <a href="/">목록으로 돌아가기</a>
+    {% endif %}
+</body>
+</html>

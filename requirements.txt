@@ -1,2 +1,5 @@
 fastapi
 uvicorn[standard]
+openai
+httpx
+jinja2
