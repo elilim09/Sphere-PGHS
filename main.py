@@ -6,10 +6,13 @@ from datetime import date
 import openai
 import os
 import hashlib
+from dotenv import load_dotenv
+
+# .env 파일에서 환경 변수를 로드합니다.
+load_dotenv()
 
 # 발급받은 API 키를 설정합니다.
-# 이 부분은 실제 키로 교체해야 합니다. 환경 변수 사용을 권장합니다.
-client = openai.OpenAI(api_key="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")
+client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 app = FastAPI()
 router = APIRouter()
