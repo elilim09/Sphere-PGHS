@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>새 분실물 등록</title>
+</head>
+<body>
+    <h1>새 분실물 등록</h1>
+    <form action="/lost/new" method="post" enctype="multipart/form-data">
+        <label for="item_name">물품명:</label><br>
+        <input type="text" id="item_name" name="item_name"><br>
+        <label for="item_description">상세설명:</label><br>
+        <textarea id="item_description" name="item_description"></textarea><br>
+        <label for="image">사진:</label><br>
+        <input type="file" id="image" name="image"><br><br>
+        <input type="submit" value="등록">
+    </form>
+</body>
+</html>
