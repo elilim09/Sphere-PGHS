@@ -1,21 +1,130 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-    <title>분실물 목록</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>분실물 목록 | Sphere-PGHS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --text: #e9efff;
+            --muted: #cbd5e1;
+            --glass: rgba(255, 255, 255, 0.12);
+            --border: rgba(255, 255, 255, 0.25);
+            --shadow: 0 20px 60px rgba(59, 130, 246, 0.2);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Pretendard', 'Inter', system-ui, -apple-system, sans-serif;
+            background: radial-gradient(circle at 20% 20%, rgba(59,130,246,0.35), transparent 25%),
+                        radial-gradient(circle at 80% 0%, rgba(99,102,241,0.35), transparent 25%),
+                        linear-gradient(180deg, #0f172a 0%, #0b1224 60%, #0f172a 100%);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 24px 18px 96px;
+            display: flex;
+            justify-content: center;
+        }
+        .shell { width: min(480px, 100%); }
+        header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+        .title-group { display: grid; gap: 6px; }
+        h1 { font-size: 20px; font-weight: 700; }
+        .subtitle { color: var(--muted); font-size: 14px; }
+        .glass-card {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 18px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            font-weight: 700;
+            text-decoration: none;
+            color: #0b1224;
+            background: linear-gradient(135deg, #93c5fd, #60a5fa);
+            border: 1px solid rgba(255,255,255,0.35);
+            box-shadow: 0 12px 30px rgba(59,130,246,0.35);
+        }
+        .btn.secondary {
+            background: rgba(255,255,255,0.12);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .card-list { display: grid; gap: 14px; }
+        .lost-card {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: 84px 1fr;
+            align-items: center;
+        }
+        .lost-image {
+            width: 84px;
+            height: 84px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.08);
+        }
+        .lost-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .lost-meta { display: grid; gap: 6px; }
+        .lost-meta h2 { font-size: 16px; font-weight: 700; }
+        .lost-meta p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+        .timestamp { font-size: 12px; color: rgba(203,213,225,0.7); }
+        .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+        footer { position: fixed; inset: auto 0 18px; display: flex; justify-content: center; }
+        .nav-bar { width: min(480px, calc(100% - 24px)); display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; padding: 12px; border-radius: 18px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(16px); }
+        .nav-link { text-align: center; color: var(--muted); font-weight: 600; text-decoration: none; padding: 10px; border-radius: 12px; }
+        .nav-link:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+    </style>
 </head>
 <body>
-    <h1>분실물 목록</h1>
-    <a href="/lost/new">새 분실물 등록</a>
-    <a href="/lost/search">분실물 검색</a>
-    <ul>
-        {% for item in lost_items %}
-        <li>
-            <h2>{{ item.name }}</h2>
-            <p>{{ item.description }}</p>
-            <p><small>등록일: {{ item.timestamp }}</small></p>
-            <img src="{{ item.image_url }}" alt="{{ item.name }}" width="200">
-        </li>
-        {% endfor %}
-    </ul>
+    <div class="shell">
+        <header>
+            <div class="title-group">
+                <h1>분실물 목록</h1>
+                <p class="subtitle">최신 등록된 물품을 카드형으로 확인하세요.</p>
+            </div>
+            <a class="btn secondary" href="/">급식 보기</a>
+        </header>
+
+        <section class="glass-card actions">
+            <a class="btn" href="/lost/new">새 분실물 등록</a>
+            <a class="btn secondary" href="/lost/search">분실물 검색</a>
+        </section>
+
+        <section class="card-list" style="margin-top: 14px;">
+            {% for item in lost_items %}
+            <article class="glass-card lost-card">
+                <div class="lost-image">
+                    <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                </div>
+                <div class="lost-meta">
+                    <h2>{{ item.name }}</h2>
+                    <p>{{ item.description }}</p>
+                    <span class="timestamp">등록일: {{ item.timestamp }}</span>
+                </div>
+            </article>
+            {% endfor %}
+        </section>
+    </div>
+
+    <footer>
+        <nav class="nav-bar">
+            <a class="nav-link" href="/">급식</a>
+            <a class="nav-link" href="/lost">분실물</a>
+            <a class="nav-link" href="/lost/search">검색</a>
+        </nav>
+    </footer>
 </body>
 </html>
