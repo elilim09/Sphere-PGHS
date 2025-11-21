@@ -1,24 +1,207 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-    <title>오늘의 급식</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오늘의 급식 | Sphere-PGHS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0051FF;
+            --glass-bg: rgba(255, 255, 255, 0.12);
+            --glass-border: rgba(255, 255, 255, 0.35);
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --blur: 16px;
+            color-scheme: light;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+            background: radial-gradient(circle at 20% 20%, rgba(0, 81, 255, 0.24), transparent 35%),
+                        radial-gradient(circle at 80% 0%, rgba(0, 210, 255, 0.18), transparent 35%),
+                        linear-gradient(135deg, #f7fbff 0%, #eaf0ff 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+        .page {
+            max-width: 520px;
+            margin: 0 auto;
+            padding: 16px 18px 100px;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .pill {
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(var(--blur));
+            color: var(--primary);
+            font-weight: 700;
+            box-shadow: 0 10px 30px rgba(0, 81, 255, 0.08);
+        }
+        h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+        .card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+            backdrop-filter: blur(var(--blur));
+        }
+        .hero {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .hero p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        .meal-list {
+            display: grid;
+            gap: 12px;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .meal-card {
+            display: grid;
+            gap: 10px;
+        }
+        .meal-text {
+            font-size: 15px;
+            line-height: 1.5;
+            color: var(--text-primary);
+        }
+        .btn-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .primary-btn, .ghost-btn {
+            flex: 1;
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 15px;
+            border: none;
+            text-decoration: none;
+            text-align: center;
+            transition: transform 0.15s ease, box-shadow 0.2s ease;
+            min-height: 48px;
+        }
+        .primary-btn {
+            background: linear-gradient(135deg, #0051FF, #3ba9ff);
+            color: #fff;
+            box-shadow: 0 12px 30px rgba(0, 81, 255, 0.25);
+        }
+        .ghost-btn {
+            background: rgba(255, 255, 255, 0.24);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+        }
+        .primary-btn:active, .ghost-btn:active { transform: scale(0.98); }
+        .image-wrapper {
+            margin-top: 16px;
+            border-radius: 16px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.32);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 18px 45px rgba(0, 81, 255, 0.16);
+        }
+        .image-wrapper img { width: 100%; display: block; }
+        nav {
+            position: fixed;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(520px, calc(100% - 24px));
+            background: rgba(255, 255, 255, 0.65);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 12px;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+            backdrop-filter: blur(var(--blur));
+        }
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .nav-btn {
+            padding: 12px 10px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid var(--glass-border);
+            text-align: center;
+            color: var(--text-primary);
+            font-weight: 700;
+            text-decoration: none;
+            font-size: 14px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        }
+        @media (max-width: 360px) {
+            .primary-btn, .ghost-btn, .nav-btn { font-size: 14px; }
+            .nav-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
 </head>
 <body>
-    <a href="/lost">분실물 바로가기</a>
-    <h1>{{ meal_date }} 급식 정보</h1>
-    <ul>
-        {% for meal in meal_list %}
-        <li>
-            {{ meal | safe }}
-            <a href="/?meal_description={{ meal | urlencode }}">이미지 보기</a>
-        </li>
-        {% endfor %}
-    </ul>
+    <div class="page">
+        <header>
+            <div class="pill">Zero-Touch 급식</div>
+            <a class="ghost-btn" style="padding:10px 12px; min-height:44px;" href="/lost">분실물</a>
+        </header>
 
-    {% if image_url %}
-    <img src="{{ image_url }}" alt="{{ meal_description }}" width="512" height="512">
-    <br>
-    <a href="/">목록으로 돌아가기</a>
-    {% endif %}
+        <section class="card hero">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                <h1>오늘의 급식</h1>
+                <span class="pill" style="padding:8px 12px; font-size:14px;">{{ meal_date }}</span>
+            </div>
+            <p>한 번의 터치로 메뉴 확인과 AI 식판 이미지를 받아보세요.</p>
+        </section>
+
+        <ul class="meal-list">
+            {% for meal in meal_list %}
+            <li class="card meal-card">
+                <div class="meal-text">{{ meal | safe }}</div>
+                <div class="btn-row">
+                    <a class="primary-btn" href="/?meal_description={{ meal | urlencode }}">AI 식판 보기</a>
+                    <a class="ghost-btn" href="/lost">분실물 찾기</a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+
+        {% if image_url %}
+        <div class="image-wrapper">
+            <img src="{{ image_url }}" alt="{{ meal_description }}">
+        </div>
+        {% endif %}
+    </div>
+
+    <nav>
+        <div class="nav-grid">
+            <a class="nav-btn" href="/">급식 홈</a>
+            <a class="nav-btn" href="/lost/search">분실물 검색</a>
+            <a class="nav-btn" href="/lost/new">빠른 등록</a>
+        </div>
+    </nav>
 </body>
 </html>
