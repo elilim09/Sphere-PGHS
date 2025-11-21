@@ -1,18 +1,66 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-    <title>새 분실물 등록</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>새 분실물 등록 | Sphere-PGHS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0051FF;
+            --glass-bg: rgba(255, 255, 255, 0.14);
+            --glass-border: rgba(255, 255, 255, 0.35);
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --blur: 16px;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif; background: radial-gradient(circle at 10% 10%, rgba(0, 81, 255, 0.22), transparent 30%), radial-gradient(circle at 90% 0%, rgba(0, 210, 255, 0.18), transparent 30%), linear-gradient(135deg, #f7fbff 0%, #eaf0ff 100%); color: var(--text-primary); }
+        .page { max-width: 520px; margin: 0 auto; padding: 18px 18px 120px; }
+        header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+        .pill { padding: 10px 14px; border-radius: 999px; background: var(--glass-bg); border: 1px solid var(--glass-border); backdrop-filter: blur(var(--blur)); color: var(--primary); font-weight: 800; }
+        h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+        form { display: grid; gap: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: 16px; box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08); backdrop-filter: blur(var(--blur)); }
+        label { font-weight: 700; color: var(--text-primary); }
+        input[type="text"], textarea, input[type="file"] { width: 100%; padding: 14px 14px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(255, 255, 255, 0.7); font-size: 15px; }
+        textarea { min-height: 110px; resize: vertical; }
+        .helper { margin: 0; color: var(--text-secondary); font-size: 13px; }
+        .primary-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; background: linear-gradient(135deg, #0051FF, #3ba9ff); color: #fff; font-weight: 800; font-size: 16px; min-height: 52px; box-shadow: 0 12px 30px rgba(0, 81, 255, 0.25); }
+        .nav-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+        .ghost-btn { display: block; text-align: center; padding: 12px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.32); border: 1px solid var(--glass-border); color: var(--text-primary); font-weight: 700; text-decoration: none; min-height: 48px; }
+    </style>
 </head>
 <body>
-    <h1>새 분실물 등록</h1>
-    <form action="/lost/new" method="post" enctype="multipart/form-data">
-        <label for="item_name">물품명:</label><br>
-        <input type="text" id="item_name" name="item_name"><br>
-        <label for="item_description">상세설명:</label><br>
-        <textarea id="item_description" name="item_description"></textarea><br>
-        <label for="image">사진:</label><br>
-        <input type="file" id="image" name="image"><br><br>
-        <input type="submit" value="등록">
-    </form>
+    <div class="page">
+        <header>
+            <div class="pill">원터치 등록</div>
+            <a class="ghost-btn" style="padding:10px 12px; min-height:44px;" href="/lost">목록</a>
+        </header>
+        <h1 style="margin-bottom:10px;">새 분실물 등록</h1>
+        <p class="helper">필수 항목만 간단히 적고 바로 등록하세요. 사진을 올리면 목록에서 바로 확인할 수 있어요.</p>
+
+        <form action="/lost/new" method="post" enctype="multipart/form-data">
+            <div>
+                <label for="item_name">물품명</label>
+                <input type="text" id="item_name" name="item_name" placeholder="예) 파란색 지갑" required>
+            </div>
+            <div>
+                <label for="item_description">상세설명</label>
+                <textarea id="item_description" name="item_description" placeholder="특징, 위치, 시간 등을 적어주세요." required></textarea>
+            </div>
+            <div>
+                <label for="image">사진</label>
+                <input type="file" id="image" name="image" accept="image/*" required>
+                <p class="helper">흔들리지 않은 정면 사진을 올리면 더 빨리 찾을 수 있어요.</p>
+            </div>
+            <button class="primary-btn" type="submit">한 번에 등록하기</button>
+            <div class="nav-row">
+                <a class="ghost-btn" href="/">급식 홈</a>
+                <a class="ghost-btn" href="/lost/search">분실물 검색</a>
+            </div>
+        </form>
+    </div>
 </body>
 </html>

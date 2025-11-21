@@ -1,25 +1,85 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-    <title>분실물 검색</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>분실물 검색 | Sphere-PGHS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0051FF;
+            --glass-bg: rgba(255, 255, 255, 0.14);
+            --glass-border: rgba(255, 255, 255, 0.35);
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --blur: 16px;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+            background: radial-gradient(circle at 10% 10%, rgba(0, 81, 255, 0.22), transparent 30%),
+                        radial-gradient(circle at 90% 0%, rgba(0, 210, 255, 0.18), transparent 30%),
+                        linear-gradient(135deg, #f7fbff 0%, #eaf0ff 100%);
+            color: var(--text-primary);
+        }
+        .page { max-width: 520px; margin: 0 auto; padding: 18px 18px 140px; }
+        header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+        .pill { padding: 10px 14px; border-radius: 999px; background: var(--glass-bg); border: 1px solid var(--glass-border); backdrop-filter: blur(var(--blur)); color: var(--primary); font-weight: 800; }
+        h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+        .card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: 16px; box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08); backdrop-filter: blur(var(--blur)); }
+        .hero { display: grid; gap: 8px; margin-bottom: 12px; }
+        .hero p { margin: 0; color: var(--text-secondary); font-size: 14px; }
+        .list { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+        .item { display: grid; gap: 8px; }
+        .item h2 { margin: 0; font-size: 18px; }
+        .item p { margin: 0; color: var(--text-secondary); line-height: 1.5; }
+        .thumb { width: 100%; border-radius: 14px; border: 1px solid var(--glass-border); overflow: hidden; background: rgba(255, 255, 255, 0.28); }
+        .thumb img { width: 100%; display: block; }
+        .search-dock { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); width: min(520px, calc(100% - 24px)); background: rgba(255, 255, 255, 0.72); border: 1px solid var(--glass-border); border-radius: 18px; padding: 12px; box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12); backdrop-filter: blur(var(--blur)); }
+        .search-form { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+        .search-input { width: 100%; padding: 14px 14px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(255, 255, 255, 0.7); font-size: 15px; }
+        .search-btn { padding: 14px 16px; border-radius: 12px; border: none; background: linear-gradient(135deg, #0051FF, #3ba9ff); color: #fff; font-weight: 800; font-size: 15px; min-width: 88px; box-shadow: 0 12px 30px rgba(0, 81, 255, 0.25); }
+        .inline-cta { display: flex; gap: 10px; margin-top: 8px; }
+        .ghost-btn { flex: 1; padding: 12px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.32); border: 1px solid var(--glass-border); color: var(--text-primary); font-weight: 700; text-align: center; text-decoration: none; min-height: 48px; }
+        @media (max-width: 360px) { h1 { font-size: 20px; } .search-form { grid-template-columns: 1fr; } .search-btn { width: 100%; } }
+    </style>
 </head>
 <body>
-    <h1>분실물 검색</h1>
-    <form action="/lost/search" method="get">
-        <input type="text" name="query" value="{{ query }}">
-        <input type="submit" value="검색">
-    </form>
+    <div class="page">
+        <header>
+            <div class="pill">터치 최소 검색</div>
+            <a class="ghost-btn" style="padding:10px 12px; min-height:44px;" href="/lost">목록</a>
+        </header>
 
-    <h2>검색 결과</h2>
-    <ul>
-        {% for item in lost_items %}
-        <li>
-            <h2>{{ item.name }}</h2>
-            <p>{{ item.description }}</p>
-            <p><small>등록일: {{ item.timestamp }}</small></p>
-            <img src="{{ item.image_url }}" alt="{{ item.name }}" width="200">
-        </li>
-        {% endfor %}
-    </ul>
+        <section class="card hero">
+            <h1>분실물 검색</h1>
+            <p>하단 검색바를 바로 눌러 원하는 물품을 빠르게 찾을 수 있어요.</p>
+            <div class="inline-cta">
+                <a class="ghost-btn" href="/">급식 홈</a>
+                <a class="ghost-btn" href="/lost/new">빠른 등록</a>
+            </div>
+        </section>
+
+        <h2 style="font-size:16px; margin:0 0 10px 0; color:var(--text-secondary);">검색 결과</h2>
+        <ul class="list">
+            {% for item in lost_items %}
+            <li class="card item">
+                <h2>{{ item.name }}</h2>
+                <p>{{ item.description }}</p>
+                <div class="thumb"><img src="{{ item.image_url }}" alt="{{ item.name }}"></div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="search-dock">
+        <form class="search-form" action="/lost/search" method="get">
+            <input class="search-input" type="text" name="query" value="{{ query }}" placeholder="예) 파란색 필통, 체육복" aria-label="분실물 검색어">
+            <button class="search-btn" type="submit">검색</button>
+        </form>
+    </div>
 </body>
 </html>
