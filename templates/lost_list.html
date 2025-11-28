@@ -2,129 +2,230 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>분실물 목록 | Sphere-PGHS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>분실물 센터</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #3b82f6;
-            --text: #e9efff;
-            --muted: #cbd5e1;
-            --glass: rgba(255, 255, 255, 0.12);
-            --border: rgba(255, 255, 255, 0.25);
-            --shadow: 0 20px 60px rgba(59, 130, 246, 0.2);
+            --bg-page: #F2F4F6;
+            --surface: #FFFFFF;
+            --primary: #3182F6;
+            --text-main: #191F28;
+            --text-sub: #8B95A1;
+            --border: #E5E8EB;
+            --radius: 20px;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
         body {
-            font-family: 'Pretendard', 'Inter', system-ui, -apple-system, sans-serif;
-            background: radial-gradient(circle at 20% 20%, rgba(59,130,246,0.35), transparent 25%),
-                        radial-gradient(circle at 80% 0%, rgba(99,102,241,0.35), transparent 25%),
-                        linear-gradient(180deg, #0f172a 0%, #0b1224 60%, #0f172a 100%);
-            color: var(--text);
-            min-height: 100vh;
-            padding: 24px 18px 96px;
+            background-color: var(--bg-page);
+            font-family: 'Pretendard', sans-serif;
+            color: var(--text-main);
+            margin: 0;
             display: flex;
             justify-content: center;
+            min-height: 100vh;
         }
-        .shell { width: min(480px, 100%); }
-        header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-        .title-group { display: grid; gap: 6px; }
-        h1 { font-size: 20px; font-weight: 700; }
-        .subtitle { color: var(--muted); font-size: 14px; }
-        .glass-card {
-            background: var(--glass);
-            border: 1px solid var(--border);
-            border-radius: 22px;
-            padding: 18px;
-            box-shadow: var(--shadow);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            padding: 80px 20px 100px; /* Header & Nav space */
         }
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 12px 14px;
-            border-radius: 14px;
+
+        /* Fixed Top Bar */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 500px;
+            background: rgba(242, 244, 246, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            z-index: 50;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 800;
+            margin: 0;
+        }
+
+        .write-btn-mini {
+            font-size: 14px;
+            color: var(--primary);
             font-weight: 700;
             text-decoration: none;
-            color: #0b1224;
-            background: linear-gradient(135deg, #93c5fd, #60a5fa);
-            border: 1px solid rgba(255,255,255,0.35);
-            box-shadow: 0 12px 30px rgba(59,130,246,0.35);
+            background: rgba(49, 130, 246, 0.1);
+            padding: 8px 16px;
+            border-radius: 100px;
         }
-        .btn.secondary {
-            background: rgba(255,255,255,0.12);
-            color: var(--text);
-            border: 1px solid var(--border);
+
+        /* Card List */
+        .card-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
-        .card-list { display: grid; gap: 14px; }
+
         .lost-card {
-            display: grid;
-            gap: 10px;
-            grid-template-columns: 84px 1fr;
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+            display: flex;
+            gap: 16px;
             align-items: center;
+            border: 1px solid white;
         }
-        .lost-image {
-            width: 84px;
-            height: 84px;
-            border-radius: 16px;
+
+        .lost-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 14px;
+            background: #F2F4F6;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .lost-info {
+            flex-grow: 1;
             overflow: hidden;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,0.08);
         }
-        .lost-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .lost-meta { display: grid; gap: 6px; }
-        .lost-meta h2 { font-size: 16px; font-weight: 700; }
-        .lost-meta p { font-size: 13px; color: var(--muted); line-height: 1.5; }
-        .timestamp { font-size: 12px; color: rgba(203,213,225,0.7); }
-        .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
-        footer { position: fixed; inset: auto 0 18px; display: flex; justify-content: center; }
-        .nav-bar { width: min(480px, calc(100% - 24px)); display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; padding: 12px; border-radius: 18px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(16px); }
-        .nav-link { text-align: center; color: var(--muted); font-weight: 600; text-decoration: none; padding: 10px; border-radius: 12px; }
-        .nav-link:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+        .lost-name {
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .lost-desc {
+            font-size: 14px;
+            color: var(--text-sub);
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .lost-time {
+            font-size: 12px;
+            color: #B0B8C1;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Floating Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(25, 31, 40, 0.9);
+            backdrop-filter: blur(20px);
+            padding: 6px;
+            border-radius: 100px;
+            display: flex;
+            gap: 4px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+
+        .nav-item {
+            padding: 12px 20px;
+            border-radius: 100px;
+            text-decoration: none;
+            color: #B0B8C1;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .nav-item.active {
+            background: var(--surface);
+            color: var(--text-main);
+        }
+
+        .nav-icon { width: 18px; height: 18px; }
+
+        /* Floating Write Button (FAB) */
+        .fab {
+            position: fixed;
+            bottom: 100px;
+            right: max(20px, calc(50% - 230px));
+            width: 56px;
+            height: 56px;
+            background: var(--primary);
+            border-radius: 50%;
+            box-shadow: 0 8px 20px rgba(49, 130, 246, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 90;
+            text-decoration: none;
+            transition: transform 0.2s;
+        }
+        .fab:active { transform: scale(0.9); }
+
     </style>
 </head>
 <body>
-    <div class="shell">
-        <header>
-            <div class="title-group">
-                <h1>분실물 목록</h1>
-                <p class="subtitle">최신 등록된 물품을 카드형으로 확인하세요.</p>
-            </div>
-            <a class="btn secondary" href="/">급식 보기</a>
-        </header>
+    <div class="top-bar">
+        <h1 class="page-title">분실물 센터</h1>
+        <a href="/" class="write-btn-mini">급식보기</a>
+    </div>
 
-        <section class="glass-card actions">
-            <a class="btn" href="/lost/new">새 분실물 등록</a>
-            <a class="btn secondary" href="/lost/search">분실물 검색</a>
-        </section>
-
-        <section class="card-list" style="margin-top: 14px;">
+    <div class="container">
+        <div class="card-list">
             {% for item in lost_items %}
-            <article class="glass-card lost-card">
-                <div class="lost-image">
-                    <img src="{{ item.image_url }}" alt="{{ item.name }}">
-                </div>
-                <div class="lost-meta">
-                    <h2>{{ item.name }}</h2>
-                    <p>{{ item.description }}</p>
-                    <span class="timestamp">등록일: {{ item.timestamp }}</span>
+            <article class="lost-card">
+                <img src="{{ item.image_url }}" alt="Item" class="lost-img" loading="lazy">
+                <div class="lost-info">
+                    <div class="lost-name">{{ item.name }}</div>
+                    <div class="lost-desc">{{ item.description }}</div>
+                    <div class="lost-time">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        {{ item.timestamp }}
+                    </div>
                 </div>
             </article>
             {% endfor %}
-        </section>
+        </div>
     </div>
 
-    <footer>
-        <nav class="nav-bar">
-            <a class="nav-link" href="/">급식</a>
-            <a class="nav-link" href="/lost">분실물</a>
-            <a class="nav-link" href="/lost/search">검색</a>
-        </nav>
-    </footer>
+    <a href="/lost/new" class="fab" aria-label="글쓰기">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </a>
+
+    <nav class="bottom-nav">
+        <a href="/" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+            홈
+        </a>
+        <a href="/lost" class="nav-item active">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+            분실물
+        </a>
+        <a href="/lost/search" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            검색
+        </a>
+    </nav>
 </body>
 </html>

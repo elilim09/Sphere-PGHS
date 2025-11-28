@@ -2,222 +2,285 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>오늘의 급식 | Sphere-PGHS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Sphere-PGHS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #3b82f6;
-            --primary-strong: #1d4ed8;
-            --text: #e9efff;
-            --muted: #cbd5e1;
-            --glass: rgba(255, 255, 255, 0.12);
-            --border: rgba(255, 255, 255, 0.25);
-            --shadow: 0 20px 60px rgba(59, 130, 246, 0.2);
+            --bg-page: #F2F4F6;
+            --surface: #FFFFFF;
+            --primary: #3182F6; /* Toss Blue style */
+            --primary-dark: #1B64DA;
+            --text-main: #191F28;
+            --text-sub: #8B95A1;
+            --border: #E5E8EB;
+            --danger: #FF3B30;
+            --radius-L: 24px;
+            --radius-M: 16px;
+            --radius-S: 12px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
         body {
-            font-family: 'Pretendard', 'Inter', system-ui, -apple-system, sans-serif;
-            background: radial-gradient(circle at 20% 20%, rgba(59,130,246,0.35), transparent 25%),
-                        radial-gradient(circle at 80% 0%, rgba(99,102,241,0.35), transparent 25%),
-                        linear-gradient(180deg, #0f172a 0%, #0b1224 60%, #0f172a 100%);
-            color: var(--text);
-            min-height: 100vh;
-            padding: 24px 18px 96px;
+            background-color: var(--bg-page);
+            font-family: 'Pretendard', sans-serif;
+            color: var(--text-main);
+            margin: 0;
             display: flex;
             justify-content: center;
+            min-height: 100vh;
+            padding-bottom: 100px; /* Nav space */
         }
-        .shell {
-            width: min(480px, 100%);
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
         }
+
+        /* Header Area */
         header {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 18px;
+            margin: 12px 0 24px;
         }
+
         .logo {
-            width: 48px;
-            height: 48px;
-            border-radius: 16px;
-            background: linear-gradient(135deg, #60a5fa, #2563eb);
-            display: grid;
-            place-items: center;
-            color: #0b1224;
+            font-size: 22px;
             font-weight: 800;
+            color: var(--primary);
+            letter-spacing: -0.5px;
+        }
+
+        .date-badge {
+            background: rgba(49, 130, 246, 0.1);
+            color: var(--primary);
+            padding: 6px 12px;
+            border-radius: 100px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* Bento Grid Layout */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius-L);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255,255,255,0.5);
+            transition: transform 0.1s;
+        }
+
+        .card:active { transform: scale(0.98); }
+
+        .card.large { grid-column: span 2; }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .card-desc {
+            font-size: 14px;
+            color: var(--text-sub);
+            line-height: 1.4;
+        }
+
+        /* Meal Section */
+        .meal-box {
+            background: var(--surface);
+            border-radius: var(--radius-L);
+            padding: 24px;
             box-shadow: var(--shadow);
         }
-        h1 {
+
+        .meal-header {
+            margin-bottom: 20px;
+        }
+        
+        .section-h2 {
             font-size: 20px;
             font-weight: 700;
-            line-height: 1.2;
+            margin: 0;
         }
-        .subtitle {
-            color: var(--muted);
-            font-size: 14px;
-        }
-        .glass-card {
-            background: var(--glass);
-            border: 1px solid var(--border);
-            border-radius: 22px;
-            padding: 18px;
-            box-shadow: var(--shadow);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-        }
-        .hero {
-            display: grid;
-            gap: 12px;
-            margin-bottom: 18px;
-        }
-        .cta-row {
+
+        .meal-list {
             display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 12px;
         }
-        .btn {
-            display: inline-flex;
+
+        .meal-item {
+            display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 12px 14px;
-            border-radius: 14px;
-            font-weight: 700;
-            text-decoration: none;
-            color: #0b1224;
-            background: linear-gradient(135deg, #93c5fd, #60a5fa);
-            border: 1px solid rgba(255,255,255,0.35);
-            box-shadow: 0 12px 30px rgba(59,130,246,0.35);
-        }
-        .btn.secondary {
-            background: rgba(255,255,255,0.12);
-            color: var(--text);
+            justify-content: space-between;
+            padding: 16px;
+            background: #F9FAFB;
+            border-radius: var(--radius-M);
             border: 1px solid var(--border);
         }
-        .section-title {
+
+        .meal-name {
             font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--text-main);
         }
-        .meal-list { display: grid; gap: 12px; }
-        .meal-card {
-            display: grid;
-            gap: 8px;
+
+        .btn-ai {
+            padding: 8px 12px;
+            background: var(--text-main);
+            color: white;
+            border-radius: var(--radius-S);
+            font-size: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Image Preview */
+        .preview-area {
+            margin-top: 24px;
+            border-radius: var(--radius-L);
+            overflow: hidden;
             position: relative;
         }
-        .meal-chip {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            padding: 6px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            color: #0b1224;
-            background: rgba(255,255,255,0.8);
-            border: 1px solid rgba(255,255,255,0.4);
-        }
-        .meal-text {
-            font-size: 14px;
-            line-height: 1.6;
-            color: var(--muted);
-        }
-        .image-preview {
-            margin-top: 16px;
-            overflow: hidden;
-            border-radius: 18px;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,0.06);
-        }
-        .image-preview img { width: 100%; display: block; }
-        .date-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            border-radius: 12px;
-            background: rgba(255,255,255,0.12);
-            border: 1px solid var(--border);
-            color: var(--muted);
-            font-size: 13px;
-        }
-        footer {
-            position: fixed;
-            inset: auto 0 18px;
-            display: flex;
-            justify-content: center;
-        }
-        .nav-bar {
-            width: min(480px, calc(100% - 24px));
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            padding: 12px;
-            border-radius: 18px;
-            background: rgba(15, 23, 42, 0.8);
-            border: 1px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(16px);
-        }
-        .nav-link {
+        
+        .preview-area img { width: 100%; display: block; }
+        
+        .close-preview {
+            display: block;
             text-align: center;
-            color: var(--muted);
-            font-weight: 600;
-            text-decoration: none;
-            padding: 10px;
-            border-radius: 12px;
+            margin-top: 12px;
+            color: var(--text-sub);
+            text-decoration: underline;
+            font-size: 14px;
         }
-        .nav-link:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(25, 31, 40, 0.9);
+            backdrop-filter: blur(20px);
+            padding: 6px;
+            border-radius: 100px;
+            display: flex;
+            gap: 4px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+
+        .nav-item {
+            padding: 12px 20px;
+            border-radius: 100px;
+            text-decoration: none;
+            color: #B0B8C1;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .nav-item.active {
+            background: var(--surface);
+            color: var(--text-main);
+        }
+        
+        .nav-icon { width: 18px; height: 18px; }
+
+        /* Icon SVG */
+        svg { stroke-width: 2px; }
+
     </style>
 </head>
 <body>
-    <div class="shell">
+    <div class="container">
         <header>
-            <div class="logo">SP</div>
-            <div>
-                <h1>오늘의 급식</h1>
-                <p class="subtitle">급식 메뉴와 AI 이미지 미리보기</p>
-            </div>
+            <div class="logo">SPHERE</div>
+            <div class="date-badge">{{ meal_date }}</div>
         </header>
 
-        <section class="glass-card hero">
-            <div class="date-pill">{{ meal_date }} · 학교 급식</div>
-            <p class="meal-text">하단에서 급식 메뉴를 선택하면 글래스 카드 안에서 즉시 AI 이미지로 확인할 수 있어요. 모바일 한 손 조작을 위해 버튼과 텍스트를 크게 배치했습니다.</p>
-            <div class="cta-row">
-                <a class="btn" href="/lost">분실물 찾기</a>
-                <a class="btn secondary" href="/lost/new">분실물 등록</a>
-            </div>
-        </section>
+        <!-- Shortcut Grid -->
+        <div class="grid-container">
+            <a href="/lost" class="card" style="text-decoration: none; color: inherit;">
+                <div class="card-title">
+                    <span style="color: var(--primary);">🔍</span> 분실물 찾기
+                </div>
+                <div class="card-desc">잃어버린 물건 검색</div>
+            </a>
+            <a href="/lost/new" class="card" style="text-decoration: none; color: inherit;">
+                <div class="card-title">
+                    <span style="color: var(--danger);">📢</span> 분실물 등록
+                </div>
+                <div class="card-desc">습득물 주인 찾기</div>
+            </a>
+        </div>
 
-        <section class="glass-card">
-            <div class="section-title">오늘의 메뉴</div>
+        <!-- Main Content: Meal -->
+        <section class="meal-box">
+            <div class="meal-header">
+                <h2 class="section-h2">오늘의 점심</h2>
+                <p class="card-desc" style="margin-top: 6px;">메뉴를 누르면 AI가 그려줍니다 🎨</p>
+            </div>
+
             <div class="meal-list">
                 {% for meal in meal_list %}
-                <article class="meal-card glass-card">
-                    <span class="meal-chip">선택하면 이미지로 보기</span>
-                    <div class="meal-text">{{ meal | safe }}</div>
-                    <a class="btn" href="/?meal_description={{ meal | urlencode }}">AI 이미지 보기</a>
-                </article>
+                <div class="meal-item">
+                    <span class="meal-name">{{ meal | safe }}</span>
+                    <a href="/?meal_description={{ meal | urlencode }}" class="btn-ai">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a10 10 0 1 0 10 10H12V2z"></path><path d="M12 12 2.1 12a10.1 10.1 0 0 0 9.9 10 10.1 10.1 0 0 0 10-9.9H12z"></path></svg>
+                        보기
+                    </a>
+                </div>
                 {% endfor %}
             </div>
 
             {% if image_url %}
-            <div class="image-preview">
-                <img src="{{ image_url }}" alt="{{ meal_description }}">
+            <div class="preview-area" id="preview">
+                <img src="{{ image_url }}" alt="AI generated meal">
             </div>
-            <div style="margin-top: 12px; text-align: right;">
-                <a class="btn secondary" href="/">목록으로 돌아가기</a>
-            </div>
+            <a href="/" class="close-preview">이미지 닫기</a>
+            <script>document.getElementById('preview').scrollIntoView({behavior:'smooth', block:'center'});</script>
             {% endif %}
         </section>
     </div>
 
-    <footer>
-        <nav class="nav-bar">
-            <a class="nav-link" href="/">급식</a>
-            <a class="nav-link" href="/lost">분실물</a>
-            <a class="nav-link" href="/lost/search">검색</a>
-        </nav>
-    </footer>
+    <!-- Floating Navigation -->
+    <nav class="bottom-nav">
+        <a href="/" class="nav-item active">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+            홈
+        </a>
+        <a href="/lost" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+            분실물
+        </a>
+        <a href="/lost/search" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            검색
+        </a>
+    </nav>
 </body>
 </html>

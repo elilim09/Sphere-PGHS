@@ -2,110 +2,197 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>새 분실물 등록 | Sphere-PGHS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>등록하기</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #3b82f6;
-            --text: #e9efff;
-            --muted: #cbd5e1;
-            --glass: rgba(255, 255, 255, 0.12);
-            --border: rgba(255, 255, 255, 0.25);
-            --shadow: 0 20px 60px rgba(59, 130, 246, 0.2);
+            --bg-page: #FFFFFF;
+            --primary: #3182F6;
+            --text-main: #191F28;
+            --text-sub: #8B95A1;
+            --input-bg: #F2F4F6;
+            --radius: 16px;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
         body {
-            font-family: 'Pretendard', 'Inter', system-ui, -apple-system, sans-serif;
-            background: radial-gradient(circle at 20% 20%, rgba(59,130,246,0.35), transparent 25%),
-                        radial-gradient(circle at 80% 0%, rgba(99,102,241,0.35), transparent 25%),
-                        linear-gradient(180deg, #0f172a 0%, #0b1224 60%, #0f172a 100%);
-            color: var(--text);
-            min-height: 100vh;
-            padding: 24px 18px 96px;
+            background-color: var(--bg-page);
+            font-family: 'Pretendard', sans-serif;
+            color: var(--text-main);
+            margin: 0;
             display: flex;
             justify-content: center;
+            min-height: 100vh;
         }
-        .shell { width: min(480px, 100%); }
-        header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-        h1 { font-size: 20px; font-weight: 700; }
-        .subtitle { color: var(--muted); font-size: 14px; }
-        .glass-card { background: var(--glass); border: 1px solid var(--border); border-radius: 22px; padding: 18px; box-shadow: var(--shadow); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
-        form { display: grid; gap: 14px; }
-        label { font-weight: 700; font-size: 14px; }
-        input[type="text"], textarea, input[type="file"] {
+
+        .container {
             width: 100%;
-            padding: 12px;
-            border-radius: 14px;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,0.08);
-            color: var(--text);
-            font-size: 14px;
+            max-width: 500px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
         }
-        textarea { min-height: 96px; resize: vertical; }
-        .btn {
-            display: inline-flex;
+
+        /* Navigation Header */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0 30px;
+        }
+
+        .back-link {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-sub);
+            text-decoration: none;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        /* Form Area */
+        form {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-sub);
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 16px;
+            border-radius: var(--radius);
+            background: var(--input-bg);
+            border: 2px solid transparent;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-main);
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            background: #fff;
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: none;
+        }
+
+        /* Large Image Upload */
+        .photo-upload {
+            position: relative;
+            width: 100%;
+            height: 180px;
+            background: var(--input-bg);
+            border-radius: var(--radius);
+            border: 2px dashed #D1D6DB;
+            display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            padding: 12px 14px;
-            border-radius: 14px;
-            font-weight: 700;
-            text-decoration: none;
-            color: #0b1224;
-            background: linear-gradient(135deg, #93c5fd, #60a5fa);
-            border: 1px solid rgba(255,255,255,0.35);
-            box-shadow: 0 12px 30px rgba(59,130,246,0.35);
+            color: var(--text-sub);
+            gap: 10px;
+            overflow: hidden;
+            transition: background 0.2s;
+        }
+        
+        .photo-upload:active { background: #E5E8EB; }
+
+        .photo-upload input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
             cursor: pointer;
         }
-        .btn.secondary { background: rgba(255,255,255,0.12); color: var(--text); border: 1px solid var(--border); }
-        .actions { display: flex; gap: 10px; flex-wrap: wrap; }
-        footer { position: fixed; inset: auto 0 18px; display: flex; justify-content: center; }
-        .nav-bar { width: min(480px, calc(100% - 24px)); display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; padding: 12px; border-radius: 18px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(16px); }
-        .nav-link { text-align: center; color: var(--muted); font-weight: 600; text-decoration: none; padding: 10px; border-radius: 12px; }
-        .nav-link:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+        .icon-camera {
+            width: 32px;
+            height: 32px;
+            color: var(--primary);
+        }
+
+        /* Sticky Bottom Button */
+        .bottom-action {
+            margin-top: auto;
+            padding-top: 20px;
+            position: sticky;
+            bottom: 20px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(49, 130, 246, 0.3);
+            transition: transform 0.1s;
+        }
+        
+        .submit-btn:active { transform: scale(0.96); }
+
     </style>
 </head>
 <body>
-    <div class="shell">
+    <div class="container">
         <header>
-            <div>
-                <h1>새 분실물 등록</h1>
-                <p class="subtitle">모바일에서 사진과 설명을 빠르게 업로드하세요.</p>
-            </div>
-            <a class="btn secondary" href="/lost">목록</a>
+            <a href="/lost" class="back-link">취소</a>
+            <div class="header-title">습득물 등록</div>
+            <div style="width: 30px;"></div> <!-- Spacer -->
         </header>
 
-        <section class="glass-card">
-            <form action="/lost/new" method="post" enctype="multipart/form-data">
-                <div>
-                    <label for="item_name">물품명</label>
-                    <input type="text" id="item_name" name="item_name" placeholder="예) 검은색 카드지갑" required>
+        <form action="/lost/new" method="post" enctype="multipart/form-data">
+            <div class="input-group">
+                <div class="photo-upload">
+                    <svg class="icon-camera" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                    <span style="font-size: 14px; font-weight: 600;">사진 추가하기 (필수)</span>
+                    <input type="file" name="image" accept="image/*" required>
                 </div>
-                <div>
-                    <label for="item_description">상세설명</label>
-                    <textarea id="item_description" name="item_description" placeholder="특징, 위치, 연락 방법 등을 적어주세요." required></textarea>
-                </div>
-                <div>
-                    <label for="image">사진 첨부</label>
-                    <input type="file" id="image" name="image" accept="image/*" required>
-                </div>
-                <div class="actions">
-                    <button class="btn" type="submit">등록하기</button>
-                    <a class="btn secondary" href="/lost">취소</a>
-                </div>
-            </form>
-        </section>
-    </div>
+            </div>
 
-    <footer>
-        <nav class="nav-bar">
-            <a class="nav-link" href="/">급식</a>
-            <a class="nav-link" href="/lost">분실물</a>
-            <a class="nav-link" href="/lost/search">검색</a>
-        </nav>
-    </footer>
+            <div class="input-group">
+                <label for="item_name">물건 이름</label>
+                <input type="text" id="item_name" name="item_name" placeholder="예) 투명 뿔테 안경" required>
+            </div>
+
+            <div class="input-group">
+                <label for="item_description">상세 설명</label>
+                <textarea id="item_description" name="item_description" placeholder="습득 장소와 보관 위치를 적어주세요." required></textarea>
+            </div>
+
+            <div class="bottom-action">
+                <button type="submit" class="submit-btn">등록 완료</button>
+            </div>
+        </form>
+    </div>
 </body>
 </html>

@@ -2,120 +2,227 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>분실물 검색 | Sphere-PGHS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>검색</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #3b82f6;
-            --text: #e9efff;
-            --muted: #cbd5e1;
-            --glass: rgba(255, 255, 255, 0.12);
-            --border: rgba(255, 255, 255, 0.25);
-            --shadow: 0 20px 60px rgba(59, 130, 246, 0.2);
+            --bg-page: #FFFFFF;
+            --primary: #3182F6;
+            --text-main: #191F28;
+            --text-sub: #8B95A1;
+            --bg-gray: #F2F4F6;
+            --border: #E5E8EB;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
         body {
-            font-family: 'Pretendard', 'Inter', system-ui, -apple-system, sans-serif;
-            background: radial-gradient(circle at 20% 20%, rgba(59,130,246,0.35), transparent 25%),
-                        radial-gradient(circle at 80% 0%, rgba(99,102,241,0.35), transparent 25%),
-                        linear-gradient(180deg, #0f172a 0%, #0b1224 60%, #0f172a 100%);
-            color: var(--text);
-            min-height: 100vh;
-            padding: 24px 18px 96px;
+            background-color: var(--bg-page);
+            font-family: 'Pretendard', sans-serif;
+            color: var(--text-main);
+            margin: 0;
             display: flex;
             justify-content: center;
+            min-height: 100vh;
         }
-        .shell { width: min(480px, 100%); }
-        header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-        h1 { font-size: 20px; font-weight: 700; }
-        .subtitle { color: var(--muted); font-size: 14px; }
-        .glass-card { background: var(--glass); border: 1px solid var(--border); border-radius: 22px; padding: 18px; box-shadow: var(--shadow); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
-        form { display: grid; gap: 12px; }
-        input[type="text"] {
+
+        .container {
             width: 100%;
-            padding: 12px;
-            border-radius: 14px;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,0.08);
-            color: var(--text);
-            font-size: 14px;
+            max-width: 500px;
+            padding: 20px 20px 100px;
         }
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 12px 14px;
-            border-radius: 14px;
-            font-weight: 700;
-            text-decoration: none;
-            color: #0b1224;
-            background: linear-gradient(135deg, #93c5fd, #60a5fa);
-            border: 1px solid rgba(255,255,255,0.35);
-            box-shadow: 0 12px 30px rgba(59,130,246,0.35);
+
+        /* Search Header */
+        .search-area {
+            position: sticky;
+            top: 20px;
+            z-index: 10;
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .input-wrapper {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 14px 14px 14px 44px;
+            background: var(--bg-gray);
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+        
+        .input-wrapper input:focus {
+            outline: 2px solid var(--primary);
+            background: white;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-sub);
+        }
+
+        .search-btn {
+            background: var(--text-main);
+            color: white;
+            border: none;
+            padding: 0 16px;
+            border-radius: 12px;
+            font-weight: 600;
             cursor: pointer;
         }
-        .btn.secondary { background: rgba(255,255,255,0.12); color: var(--text); border: 1px solid var(--border); }
-        .actions { display: flex; gap: 10px; flex-wrap: wrap; }
-        .card-list { display: grid; gap: 14px; margin-top: 14px; }
-        .lost-card { display: grid; gap: 10px; grid-template-columns: 84px 1fr; align-items: center; }
-        .lost-image { width: 84px; height: 84px; border-radius: 16px; overflow: hidden; border: 1px solid var(--border); background: rgba(255,255,255,0.08); }
-        .lost-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .lost-meta { display: grid; gap: 6px; }
-        .lost-meta h2 { font-size: 16px; font-weight: 700; }
-        .lost-meta p { font-size: 13px; color: var(--muted); line-height: 1.5; }
-        .timestamp { font-size: 12px; color: rgba(203,213,225,0.7); }
-        footer { position: fixed; inset: auto 0 18px; display: flex; justify-content: center; }
-        .nav-bar { width: min(480px, calc(100% - 24px)); display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; padding: 12px; border-radius: 18px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(16px); }
-        .nav-link { text-align: center; color: var(--muted); font-weight: 600; text-decoration: none; padding: 10px; border-radius: 12px; }
-        .nav-link:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+        /* Result Section */
+        .result-header {
+            font-size: 14px;
+            color: var(--text-sub);
+            font-weight: 600;
+            margin-bottom: 12px;
+            padding-left: 4px;
+        }
+
+        .result-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .result-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .result-thumb {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            background: var(--bg-gray);
+            object-fit: cover;
+        }
+
+        .result-info h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin: 0 0 2px 0;
+        }
+
+        .result-info p {
+            font-size: 13px;
+            color: var(--text-sub);
+            margin: 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Empty State */
+        .empty-view {
+            text-align: center;
+            margin-top: 80px;
+            color: #D1D6DB;
+        }
+
+        /* Floating Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(25, 31, 40, 0.9);
+            backdrop-filter: blur(20px);
+            padding: 6px;
+            border-radius: 100px;
+            display: flex;
+            gap: 4px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+
+        .nav-item {
+            padding: 12px 20px;
+            border-radius: 100px;
+            text-decoration: none;
+            color: #B0B8C1;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .nav-item.active {
+            background: white;
+            color: var(--text-main);
+        }
+        
+        .nav-icon { width: 18px; height: 18px; }
+
     </style>
 </head>
 <body>
-    <div class="shell">
-        <header>
-            <div>
-                <h1>분실물 검색</h1>
-                <p class="subtitle">키워드로 빠르게 찾고, 결과를 카드로 확인하세요.</p>
+    <div class="container">
+        <form action="/lost/search" method="get" class="search-area">
+            <div class="input-wrapper">
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" name="query" value="{{ query }}" placeholder="물건 이름 검색" aria-label="검색어">
             </div>
-            <a class="btn secondary" href="/lost">목록</a>
-        </header>
+            <button type="submit" class="search-btn">검색</button>
+        </form>
 
-        <section class="glass-card">
-            <form action="/lost/search" method="get">
-                <input type="text" name="query" value="{{ query }}" placeholder="예) 파란 필통, 에어팟" aria-label="검색어">
-                <div class="actions">
-                    <button class="btn" type="submit">검색</button>
-                    <a class="btn secondary" href="/lost/new">등록하기</a>
-                </div>
-            </form>
-        </section>
+        {% if query %}
+        <div class="result-header">검색 결과</div>
+        {% endif %}
 
-        <section class="card-list">
+        <div class="result-list">
             {% for item in lost_items %}
-            <article class="glass-card lost-card">
-                <div class="lost-image">
-                    <img src="{{ item.image_url }}" alt="{{ item.name }}">
-                </div>
-                <div class="lost-meta">
-                    <h2>{{ item.name }}</h2>
+            <article class="result-item">
+                <img src="{{ item.image_url }}" alt="thumb" class="result-thumb">
+                <div class="result-info">
+                    <h3>{{ item.name }}</h3>
                     <p>{{ item.description }}</p>
-                    <span class="timestamp">등록일: {{ item.timestamp }}</span>
                 </div>
             </article>
+            {% else %}
+                {% if query %}
+                <div class="empty-view">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <p style="margin-top: 10px; font-weight: 600;">검색 결과가 없어요</p>
+                </div>
+                {% endif %}
             {% endfor %}
-        </section>
+        </div>
     </div>
 
-    <footer>
-        <nav class="nav-bar">
-            <a class="nav-link" href="/">급식</a>
-            <a class="nav-link" href="/lost">분실물</a>
-            <a class="nav-link" href="/lost/search">검색</a>
-        </nav>
-    </footer>
+    <nav class="bottom-nav">
+        <a href="/" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+            홈
+        </a>
+        <a href="/lost" class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+            분실물
+        </a>
+        <a href="/lost/search" class="nav-item active">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            검색
+        </a>
+    </nav>
 </body>
 </html>
