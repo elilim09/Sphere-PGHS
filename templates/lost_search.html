@@ -181,155 +181,121 @@
         .ai-overlay {
             position: fixed;
             inset: 0;
-            background: radial-gradient(circle at 20% 20%, rgba(49, 130, 246, 0.2), transparent 40%),
-                        radial-gradient(circle at 80% 0%, rgba(255, 255, 255, 0.12), transparent 40%),
-                        rgba(6, 10, 16, 0.75);
-            backdrop-filter: blur(18px);
-            display: none;
-            flex-direction: column;
-            justify-content: flex-end;
-            z-index: 999;
-            color: white;
-            padding: 24px 18px 30px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 120;
         }
 
-        .ai-overlay.active { display: flex; }
+        .ai-overlay.active { opacity: 1; }
 
         .ai-aurora {
             position: absolute;
             inset: 0;
-            background: conic-gradient(from 140deg, rgba(49,130,246,0.25), rgba(255,255,255,0.1), rgba(49,130,246,0.3));
-            filter: blur(80px);
-            opacity: 0.9;
-            animation: auroraShift 9s infinite alternate;
+            background: conic-gradient(from 140deg, rgba(49,130,246,0.12), rgba(255,255,255,0.06), rgba(49,130,246,0.18));
+            filter: blur(120px);
+            opacity: 0.65;
+            animation: auroraShift 12s infinite alternate;
         }
 
         .ai-aurora.second {
-            background: conic-gradient(from 320deg, rgba(255,255,255,0.2), rgba(49,130,246,0.35), rgba(255,255,255,0.05));
-            animation-duration: 12s;
+            background: conic-gradient(from 320deg, rgba(255,255,255,0.12), rgba(49,130,246,0.2), rgba(255,255,255,0.05));
+            animation-duration: 16s;
         }
 
         @keyframes auroraShift {
             0% { transform: translate3d(-10px, 0, 0) scale(1); }
-            100% { transform: translate3d(10px, -10px, 0) scale(1.05); }
+            100% { transform: translate3d(12px, -12px, 0) scale(1.04); }
         }
 
-        .ai-shell {
-            position: relative;
-            z-index: 2;
-            width: 100%;
-            max-width: 640px;
-            margin: 0 auto;
-            background: rgba(18, 22, 28, 0.8);
-            border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 30px 80px rgba(0,0,0,0.45);
-            border-radius: 24px;
-            padding: 18px;
-            backdrop-filter: blur(10px);
-        }
-
-        .ai-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .ai-title {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 800;
-            letter-spacing: -0.2px;
-        }
-
-        .ai-sub {
-            margin: 2px 0 0;
-            color: #D1D6DB;
-            font-size: 13px;
-        }
-
-        .ai-close {
-            background: rgba(255,255,255,0.1);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 12px;
-            padding: 8px 12px;
-            cursor: pointer;
-            font-weight: 700;
-        }
-
-        .ai-log {
-            max-height: 35vh;
-            overflow-y: auto;
-            padding: 12px;
-            background: rgba(255,255,255,0.04);
-            border-radius: 16px;
-            border: 1px solid rgba(255,255,255,0.12);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .ai-bubble {
-            padding: 12px 14px;
-            border-radius: 14px;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .ai-bubble.user { background: rgba(49, 130, 246, 0.18); color: #E8F1FF; align-self: flex-end; }
-        .ai-bubble.agent { background: rgba(255,255,255,0.1); color: white; align-self: flex-start; }
-        .ai-bubble.system { background: rgba(255,255,255,0.08); color: #F2F4F6; align-self: stretch; }
-
-        .ai-input-bar {
-            margin-top: 14px;
-            display: flex;
+        .ai-control-bar {
+            position: fixed;
+            bottom: 108px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
             align-items: center;
             gap: 10px;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.2);
-            padding: 10px;
-            border-radius: 16px;
+            background: rgba(12, 16, 24, 0.85);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 18px;
+            padding: 10px 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            max-width: 520px;
+            width: calc(100% - 32px);
+            pointer-events: auto;
         }
+
+        .ai-overlay.active .ai-control-bar { display: flex; }
 
         .ai-input {
             flex: 1;
             padding: 12px 14px;
             border-radius: 12px;
             border: 1px solid rgba(255,255,255,0.2);
-            background: rgba(0,0,0,0.25);
+            background: rgba(255,255,255,0.06);
             color: white;
             font-size: 15px;
         }
 
-        .ai-input::placeholder { color: rgba(255,255,255,0.6); }
+        .ai-input::placeholder { color: rgba(255,255,255,0.8); }
 
-        .ai-btn, .ai-mic {
+        .ai-submit, .ai-mic {
             border: none;
             background: var(--primary);
             color: white;
             padding: 12px 14px;
             border-radius: 12px;
-            font-weight: 700;
+            font-weight: 800;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            box-shadow: 0 10px 20px rgba(49, 130, 246, 0.3);
+            box-shadow: 0 10px 20px rgba(49, 130, 246, 0.35);
         }
 
         .ai-mic.listening { background: #FF3B30; box-shadow: 0 10px 20px rgba(255, 59, 48, 0.3); }
 
-        body.no-scroll { overflow: hidden; }
+        /* Toasts */
+        .toast-stack {
+            position: fixed;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 130;
+            width: min(480px, calc(100% - 32px));
+        }
+
+        .toast {
+            background: rgba(25, 31, 40, 0.95);
+            color: white;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 14px 40px rgba(0,0,0,0.2);
+            font-weight: 600;
+            animation: fadeSlide 0.2s ease;
+        }
+
+        .toast.success { border-left: 4px solid #20C997; }
+        .toast.error { border-left: 4px solid #FF6B6B; }
+
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
     </style>
 </head>
 <body>
     <div class="container">
-        <form action="/lost/search" method="get" class="search-area">
+        <form action="/lost/search" method="get" class="search-area" data-lost-search-form>
             <div class="input-wrapper">
                 <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="text" name="query" value="{{ query }}" placeholder="물건 이름 검색" aria-label="검색어">
+                <input type="text" name="query" value="{{ query }}" placeholder="물건 이름 검색" aria-label="검색어" data-lost-search-input>
             </div>
             <button type="submit" class="search-btn">검색</button>
         </form>
@@ -380,79 +346,63 @@
     <div class="ai-overlay" id="aiOverlay" aria-hidden="true">
         <div class="ai-aurora"></div>
         <div class="ai-aurora second"></div>
-        <div class="ai-shell">
-            <div class="ai-header">
-                <div>
-                    <p class="ai-title">Sphere Copilot</p>
-                    <p class="ai-sub">AI가 페이지를 제어할 수 있어요. 음성·텍스트로 지시해 보세요.</p>
-                </div>
-                <button class="ai-close" type="button" id="aiClose">닫기</button>
-            </div>
-            <div class="ai-log" id="aiLog" aria-live="polite"></div>
-            <form class="ai-input-bar" id="aiForm">
-                <button class="ai-mic" type="button" id="aiMic">🎙</button>
-                <input class="ai-input" id="aiInput" placeholder="예) 가방 검색해 줘, 홈으로 이동" autocomplete="off" />
-                <button class="ai-btn" type="submit">보내기</button>
-            </form>
-        </div>
+        <form class="ai-control-bar" id="aiControls">
+            <input class="ai-input" id="aiInput" placeholder="명령을 적거나 말해보세요." autocomplete="off" />
+            <button class="ai-submit" type="submit" id="aiSend">지시</button>
+            <button class="ai-mic" type="button" id="aiMic" aria-label="음성 입력">🎙</button>
+        </form>
     </div>
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
 
     <script>
         (function() {
             const overlay = document.getElementById('aiOverlay');
-            const aiLog = document.getElementById('aiLog');
             const aiInput = document.getElementById('aiInput');
-            const aiForm = document.getElementById('aiForm');
+            const aiSend = document.getElementById('aiSend');
             const aiMic = document.getElementById('aiMic');
+            const toastStack = document.getElementById('toastStack');
             const openButtons = document.querySelectorAll('.ai-launch');
-            const closeButton = document.getElementById('aiClose');
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const mealButtons = document.querySelectorAll('[data-meal-button]');
+            const lostSearchInput = document.querySelector('[data-lost-search-input]');
+            const lostSearchForm = document.querySelector('[data-lost-search-form]');
             let recognition = null;
             let listening = false;
+            let overlayActive = false;
 
-            function appendBubble(text, role = 'agent') {
-                const bubble = document.createElement('div');
-                bubble.className = `ai-bubble ${role}`;
-                bubble.textContent = text;
-                aiLog.appendChild(bubble);
-                aiLog.scrollTop = aiLog.scrollHeight;
+            function showToast(text, type = 'info') {
+                if (!text) return;
+                const toast = document.createElement('div');
+                toast.className = `toast ${type === 'error' ? 'error' : type === 'success' ? 'success' : ''}`;
+                toast.textContent = text;
+                toastStack.appendChild(toast);
+                setTimeout(() => toast.remove(), 2600);
             }
 
-            function openOverlay() {
-                overlay.classList.add('active');
-                document.body.classList.add('no-scroll');
-                if (!aiLog.childElementCount) {
-                    appendBubble('AI가 페이지를 제어할 준비가 되었어요. 원하는 동작을 말하거나 입력해 주세요.', 'system');
+            function toggleOverlay() {
+                overlayActive = !overlayActive;
+                overlay.classList.toggle('active', overlayActive);
+                if (overlayActive) {
+                    showToast('AI 제어 모드가 켜졌어요. 하단에서 지시하세요.');
+                    aiInput.focus();
                 }
-                aiInput.focus();
-            }
-
-            function closeOverlay() {
-                overlay.classList.remove('active');
-                document.body.classList.remove('no-scroll');
             }
 
             async function sendToAgent(message) {
-                appendBubble(message, 'user');
-                const thinking = document.createElement('div');
-                thinking.className = 'ai-bubble agent';
-                thinking.textContent = '지시를 이해하는 중...';
-                aiLog.appendChild(thinking);
-                aiLog.scrollTop = aiLog.scrollHeight;
-
+                const trimmed = message.trim();
+                if (!trimmed) return;
+                showToast(`"${trimmed}" 지시를 전달했어요.`);
                 try {
                     const response = await fetch('/api/agent', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message, current_path: window.location.pathname })
+                        body: JSON.stringify({ message: trimmed, current_path: window.location.pathname })
                     });
                     const data = await response.json();
-                    thinking.remove();
-                    appendBubble(data.reply || '응답을 불러올 수 없어요.', 'agent');
+                    if (data.reply) showToast(data.reply, 'success');
                     handleActions(data.actions || []);
                 } catch (error) {
-                    thinking.remove();
-                    appendBubble('서버 연결에 문제가 있어요. 잠시 후 다시 시도해 주세요.', 'agent');
+                    showToast('서버 연결에 문제가 있어요. 잠시 후 다시 시도해 주세요.', 'error');
                 }
             }
 
@@ -468,11 +418,37 @@
                         case 'open_form':
                             window.location.href = '/lost/new';
                             break;
-                        case 'search_lost':
-                            window.location.href = target || '/lost/search';
+                        case 'search_lost': {
+                            const keyword = target || action.message || '';
+                            if (lostSearchInput) {
+                                lostSearchInput.value = keyword;
+                                showToast(keyword ? `"${keyword}"을(를) 바로 찾아볼게요.` : '분실물 검색창으로 이동합니다.');
+                                if (lostSearchForm) lostSearchForm.submit();
+                            } else {
+                                showToast(keyword ? `"${keyword}" 검색을 실행합니다.` : '분실물 검색 페이지로 이동합니다.');
+                                const url = keyword ? `/lost/search?query=${encodeURIComponent(keyword)}` : '/lost/search';
+                                window.location.href = url;
+                            }
                             break;
+                        }
+                        case 'open_meal_image': {
+                            let btn = null;
+                            if (target) {
+                                mealButtons.forEach((el) => {
+                                    if (!btn && el.dataset.mealText && el.dataset.mealText.includes(target)) {
+                                        btn = el;
+                                    }
+                                });
+                            }
+                            if (!btn) btn = mealButtons[0];
+                            if (btn) {
+                                showToast('급식 이미지를 띄우는 중입니다.');
+                                btn.click();
+                            }
+                            break;
+                        }
                         case 'announce':
-                            if (action.message) appendBubble(action.message, 'system');
+                            if (action.message) showToast(action.message);
                             break;
                         default:
                             break;
@@ -480,15 +456,20 @@
                 });
             }
 
-            openButtons.forEach((btn) => btn.addEventListener('click', openOverlay));
-            closeButton.addEventListener('click', closeOverlay);
+            openButtons.forEach((btn) => btn.addEventListener('click', toggleOverlay));
 
-            aiForm.addEventListener('submit', (e) => {
+            aiSend.addEventListener('click', (e) => {
                 e.preventDefault();
-                const message = aiInput.value.trim();
-                if (!message) return;
+                const message = aiInput.value;
                 aiInput.value = '';
                 sendToAgent(message);
+            });
+
+            aiInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    aiSend.click();
+                }
             });
 
             if (SpeechRecognition) {
@@ -500,7 +481,6 @@
                 recognition.onresult = (event) => {
                     const transcript = event.results[0][0].transcript;
                     aiInput.value = transcript;
-                    appendBubble(`🎤 ${transcript}`, 'user');
                     sendToAgent(transcript);
                 };
 
@@ -513,7 +493,7 @@
 
             aiMic.addEventListener('click', () => {
                 if (!recognition) {
-                    appendBubble('이 브라우저에서는 음성 입력을 지원하지 않아요. 텍스트로 입력해 주세요.', 'system');
+                    showToast('이 브라우저에서는 음성 입력을 지원하지 않아요. 텍스트로 입력해 주세요.', 'error');
                     return;
                 }
 
