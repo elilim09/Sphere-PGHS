@@ -27,6 +27,7 @@
             display: flex;
             justify-content: center;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
         .container {
@@ -168,14 +169,21 @@
             border: none;
             background: transparent;
             cursor: pointer;
+            white-space: nowrap;
+            min-width: 72px;
         }
 
         .nav-item.active {
             background: white;
             color: var(--text-main);
         }
-        
-        .nav-icon { width: 18px; height: 18px; }
+
+        .nav-icon { width: 18px; height: 18px; flex-shrink: 0; }
+
+        @media (max-width: 420px) {
+            .nav-item { padding: 10px 14px; font-size: 13px; gap: 4px; }
+            .container { padding: 16px; }
+        }
 
         /* Zero-touch AI Overlay */
         .ai-overlay {
@@ -185,6 +193,7 @@
             opacity: 0;
             transition: opacity 0.3s ease;
             z-index: 120;
+            overflow: hidden;
         }
 
         .ai-overlay.active { opacity: 1; }
@@ -192,20 +201,41 @@
         .ai-aurora {
             position: absolute;
             inset: 0;
-            background: conic-gradient(from 140deg, rgba(49,130,246,0.12), rgba(255,255,255,0.06), rgba(49,130,246,0.18));
-            filter: blur(120px);
-            opacity: 0.65;
+            background: conic-gradient(from 140deg, rgba(49,130,246,0.18), rgba(255,255,255,0.1), rgba(49,130,246,0.28));
+            filter: blur(110px);
+            opacity: 0.78;
             animation: auroraShift 12s infinite alternate;
         }
 
         .ai-aurora.second {
-            background: conic-gradient(from 320deg, rgba(255,255,255,0.12), rgba(49,130,246,0.2), rgba(255,255,255,0.05));
-            animation-duration: 16s;
+            background: conic-gradient(from 320deg, rgba(255,255,255,0.14), rgba(49,130,246,0.32), rgba(255,255,255,0.1));
+            animation: auroraDrift 16s ease-in-out infinite alternate;
+        }
+
+        .ai-aurora.edge {
+            background: radial-gradient(circle at 10% 10%, rgba(49,130,246,0.24), transparent 45%),
+                        radial-gradient(circle at 90% 15%, rgba(25,31,40,0.38), transparent 46%),
+                        radial-gradient(circle at 15% 90%, rgba(49,130,246,0.22), transparent 44%),
+                        radial-gradient(circle at 88% 88%, rgba(12,16,24,0.32), transparent 48%);
+            opacity: 0.7;
+            filter: blur(90px);
+            mix-blend-mode: screen;
+            animation: edgePulse 18s ease-in-out infinite alternate;
         }
 
         @keyframes auroraShift {
-            0% { transform: translate3d(-10px, 0, 0) scale(1); }
-            100% { transform: translate3d(12px, -12px, 0) scale(1.04); }
+            0% { transform: translate3d(-12px, 0, 0) scale(1); }
+            100% { transform: translate3d(16px, -16px, 0) scale(1.05); }
+        }
+
+        @keyframes auroraDrift {
+            0% { transform: translate3d(6px, -6px, 0) scale(1); }
+            100% { transform: translate3d(-10px, 12px, 0) scale(1.06); }
+        }
+
+        @keyframes edgePulse {
+            0% { transform: scale(1); opacity: 0.58; }
+            100% { transform: scale(1.04); opacity: 0.78; }
         }
 
         .ai-control-bar {
@@ -346,6 +376,7 @@
     <div class="ai-overlay" id="aiOverlay" aria-hidden="true">
         <div class="ai-aurora"></div>
         <div class="ai-aurora second"></div>
+        <div class="ai-aurora edge"></div>
         <form class="ai-control-bar" id="aiControls">
             <input class="ai-input" id="aiInput" placeholder="명령을 적거나 말해보세요." autocomplete="off" />
             <button class="ai-submit" type="submit" id="aiSend">지시</button>
@@ -366,6 +397,9 @@
             const mealButtons = document.querySelectorAll('[data-meal-button]');
             const lostSearchInput = document.querySelector('[data-lost-search-input]');
             const lostSearchForm = document.querySelector('[data-lost-search-form]');
+            const lostForm = document.querySelector('[data-lost-form]');
+            const lostNameInput = document.querySelector('[data-lost-name]');
+            const lostDescInput = document.querySelector('[data-lost-desc]');
             let recognition = null;
             let listening = false;
             let overlayActive = false;
@@ -379,8 +413,8 @@
                 setTimeout(() => toast.remove(), 2600);
             }
 
-            function toggleOverlay() {
-                overlayActive = !overlayActive;
+            function toggleOverlay(forceState) {
+                overlayActive = typeof forceState === 'boolean' ? forceState : !overlayActive;
                 overlay.classList.toggle('active', overlayActive);
                 if (overlayActive) {
                     showToast('AI 제어 모드가 켜졌어요. 하단에서 지시하세요.');
@@ -416,6 +450,7 @@
                             if (target) window.location.href = target;
                             break;
                         case 'open_form':
+                        case 'open_lost_form':
                             window.location.href = '/lost/new';
                             break;
                         case 'search_lost': {
@@ -431,6 +466,37 @@
                             }
                             break;
                         }
+                        case 'fill_field': {
+                            const value = action.message || '';
+                            if (target === 'item_name' && lostNameInput) {
+                                lostNameInput.value = value;
+                                lostNameInput.focus();
+                                showToast('물건 이름을 입력했어요.', 'success');
+                            } else if (target === 'item_description' && lostDescInput) {
+                                lostDescInput.value = value;
+                                lostDescInput.focus();
+                                showToast('상세 설명을 채웠어요.', 'success');
+                            } else if (target) {
+                                showToast('지정한 필드를 찾을 수 없어요.', 'error');
+                            }
+                            break;
+                        }
+                        case 'submit_lost_form': {
+                            if (lostForm) {
+                                lostForm.requestSubmit();
+                                showToast('등록 요청을 보냈어요.', 'success');
+                            } else {
+                                showToast('등록 화면이 아니에요. 이동할게요.', 'info');
+                                window.location.href = '/lost/new';
+                            }
+                            break;
+                        }
+                        case 'focus_search':
+                            if (lostSearchInput) {
+                                lostSearchInput.focus();
+                                showToast('검색창을 활성화했어요.');
+                            }
+                            break;
                         case 'open_meal_image': {
                             let btn = null;
                             if (target) {
@@ -447,10 +513,14 @@
                             }
                             break;
                         }
+                        case 'toggle_overlay':
+                            toggleOverlay(target === 'open' ? true : target === 'close' ? false : undefined);
+                            break;
                         case 'announce':
                             if (action.message) showToast(action.message);
                             break;
                         default:
+                            if (action.message) showToast(action.message);
                             break;
                     }
                 });
