@@ -201,6 +201,9 @@
             align-items: center;
             gap: 6px;
             transition: all 0.2s;
+            border: none;
+            background: transparent;
+            cursor: pointer;
         }
 
         .nav-item.active {
@@ -212,6 +215,117 @@
 
         /* Icon SVG */
         svg { stroke-width: 2px; }
+
+        /* Zero-touch AI Overlay */
+        .ai-overlay {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 120;
+        }
+
+        .ai-overlay.active { opacity: 1; }
+
+        .ai-aurora {
+            position: absolute;
+            inset: 0;
+            background: conic-gradient(from 140deg, rgba(49,130,246,0.12), rgba(255,255,255,0.06), rgba(49,130,246,0.18));
+            filter: blur(120px);
+            opacity: 0.65;
+            animation: auroraShift 12s infinite alternate;
+        }
+
+        .ai-aurora.second {
+            background: conic-gradient(from 320deg, rgba(255,255,255,0.12), rgba(49,130,246,0.2), rgba(255,255,255,0.05));
+            animation-duration: 16s;
+        }
+
+        @keyframes auroraShift {
+            0% { transform: translate3d(-10px, 0, 0) scale(1); }
+            100% { transform: translate3d(12px, -12px, 0) scale(1.04); }
+        }
+
+        .ai-control-bar {
+            position: fixed;
+            bottom: 108px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            align-items: center;
+            gap: 10px;
+            background: rgba(12, 16, 24, 0.85);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 18px;
+            padding: 10px 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            max-width: 520px;
+            width: calc(100% - 32px);
+            pointer-events: auto;
+        }
+
+        .ai-overlay.active .ai-control-bar { display: flex; }
+
+        .ai-input {
+            flex: 1;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.06);
+            color: white;
+            font-size: 15px;
+        }
+
+        .ai-input::placeholder { color: rgba(255,255,255,0.8); }
+
+        .ai-submit, .ai-mic {
+            border: none;
+            background: var(--primary);
+            color: white;
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 10px 20px rgba(49, 130, 246, 0.35);
+        }
+
+        .ai-mic.listening { background: #FF3B30; box-shadow: 0 10px 20px rgba(255, 59, 48, 0.3); }
+
+        /* Toasts */
+        .toast-stack {
+            position: fixed;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 130;
+            width: min(480px, calc(100% - 32px));
+        }
+
+        .toast {
+            background: rgba(25, 31, 40, 0.95);
+            color: white;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 14px 40px rgba(0,0,0,0.2);
+            font-weight: 600;
+            animation: fadeSlide 0.2s ease;
+        }
+
+        .toast.success { border-left: 4px solid #20C997; }
+        .toast.error { border-left: 4px solid #FF6B6B; }
+
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
     </style>
 </head>
@@ -249,7 +363,7 @@
                 {% for meal in meal_list %}
                 <div class="meal-item">
                     <span class="meal-name">{{ meal | safe }}</span>
-                    <a href="/?meal_description={{ meal | urlencode }}" class="btn-ai">
+                    <a href="/?meal_description={{ meal | urlencode }}" class="btn-ai" data-meal-button data-meal-text="{{ meal | replace('"', '\"') }}">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a10 10 0 1 0 10 10H12V2z"></path><path d="M12 12 2.1 12a10.1 10.1 0 0 0 9.9 10 10.1 10.1 0 0 0 10-9.9H12z"></path></svg>
                         보기
                     </a>
@@ -281,6 +395,177 @@
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             검색
         </a>
+        <button type="button" class="nav-item ai-launch">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v4"></path><path d="M12 18v4"></path><path d="m4.93 4.93 2.83 2.83"></path><path d="m16.24 16.24 2.83 2.83"></path><path d="M2 12h4"></path><path d="M18 12h4"></path><path d="m4.93 19.07 2.83-2.83"></path><path d="m16.24 7.76 2.83-2.83"></path></svg>
+            AI 제어
+        </button>
     </nav>
+
+    <div class="ai-overlay" id="aiOverlay" aria-hidden="true">
+        <div class="ai-aurora"></div>
+        <div class="ai-aurora second"></div>
+        <form class="ai-control-bar" id="aiControls">
+            <input class="ai-input" id="aiInput" placeholder="명령을 적거나 말해보세요." autocomplete="off" />
+            <button class="ai-submit" type="submit" id="aiSend">지시</button>
+            <button class="ai-mic" type="button" id="aiMic" aria-label="음성 입력">🎙</button>
+        </form>
+    </div>
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+    <script>
+        (function() {
+            const overlay = document.getElementById('aiOverlay');
+            const aiInput = document.getElementById('aiInput');
+            const aiSend = document.getElementById('aiSend');
+            const aiMic = document.getElementById('aiMic');
+            const toastStack = document.getElementById('toastStack');
+            const openButtons = document.querySelectorAll('.ai-launch');
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const mealButtons = document.querySelectorAll('[data-meal-button]');
+            const lostSearchInput = document.querySelector('[data-lost-search-input]');
+            const lostSearchForm = document.querySelector('[data-lost-search-form]');
+            let recognition = null;
+            let listening = false;
+            let overlayActive = false;
+
+            function showToast(text, type = 'info') {
+                if (!text) return;
+                const toast = document.createElement('div');
+                toast.className = `toast ${type === 'error' ? 'error' : type === 'success' ? 'success' : ''}`;
+                toast.textContent = text;
+                toastStack.appendChild(toast);
+                setTimeout(() => toast.remove(), 2600);
+            }
+
+            function toggleOverlay() {
+                overlayActive = !overlayActive;
+                overlay.classList.toggle('active', overlayActive);
+                if (overlayActive) {
+                    showToast('AI 제어 모드가 켜졌어요. 하단에서 지시하세요.');
+                    aiInput.focus();
+                }
+            }
+
+            async function sendToAgent(message) {
+                const trimmed = message.trim();
+                if (!trimmed) return;
+                showToast(`"${trimmed}" 지시를 전달했어요.`);
+                try {
+                    const response = await fetch('/api/agent', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: trimmed, current_path: window.location.pathname })
+                    });
+                    const data = await response.json();
+                    if (data.reply) showToast(data.reply, 'success');
+                    handleActions(data.actions || []);
+                } catch (error) {
+                    showToast('서버 연결에 문제가 있어요. 잠시 후 다시 시도해 주세요.', 'error');
+                }
+            }
+
+            function handleActions(actions) {
+                if (!Array.isArray(actions)) return;
+                actions.forEach((action) => {
+                    if (!action || !action.type) return;
+                    const target = action.target;
+                    switch (action.type) {
+                        case 'navigate':
+                            if (target) window.location.href = target;
+                            break;
+                        case 'open_form':
+                            window.location.href = '/lost/new';
+                            break;
+                        case 'search_lost': {
+                            const keyword = target || action.message || '';
+                            if (lostSearchInput) {
+                                lostSearchInput.value = keyword;
+                                showToast(keyword ? `"${keyword}"을(를) 바로 찾아볼게요.` : '분실물 검색창으로 이동합니다.');
+                                if (lostSearchForm) lostSearchForm.submit();
+                            } else {
+                                showToast(keyword ? `"${keyword}" 검색을 실행합니다.` : '분실물 검색 페이지로 이동합니다.');
+                                const url = keyword ? `/lost/search?query=${encodeURIComponent(keyword)}` : '/lost/search';
+                                window.location.href = url;
+                            }
+                            break;
+                        }
+                        case 'open_meal_image': {
+                            let btn = null;
+                            if (target) {
+                                mealButtons.forEach((el) => {
+                                    if (!btn && el.dataset.mealText && el.dataset.mealText.includes(target)) {
+                                        btn = el;
+                                    }
+                                });
+                            }
+                            if (!btn) btn = mealButtons[0];
+                            if (btn) {
+                                showToast('급식 이미지를 띄우는 중입니다.');
+                                btn.click();
+                            }
+                            break;
+                        }
+                        case 'announce':
+                            if (action.message) showToast(action.message);
+                            break;
+                        default:
+                            break;
+                    }
+                });
+            }
+
+            openButtons.forEach((btn) => btn.addEventListener('click', toggleOverlay));
+
+            aiSend.addEventListener('click', (e) => {
+                e.preventDefault();
+                const message = aiInput.value;
+                aiInput.value = '';
+                sendToAgent(message);
+            });
+
+            aiInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    aiSend.click();
+                }
+            });
+
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.lang = 'ko-KR';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    aiInput.value = transcript;
+                    sendToAgent(transcript);
+                };
+
+                recognition.onend = () => {
+                    listening = false;
+                    aiMic.classList.remove('listening');
+                    aiMic.textContent = '🎙';
+                };
+            }
+
+            aiMic.addEventListener('click', () => {
+                if (!recognition) {
+                    showToast('이 브라우저에서는 음성 입력을 지원하지 않아요. 텍스트로 입력해 주세요.', 'error');
+                    return;
+                }
+
+                if (listening) {
+                    recognition.stop();
+                    return;
+                }
+
+                listening = true;
+                aiMic.classList.add('listening');
+                aiMic.textContent = '◼';
+                recognition.start();
+            });
+        })();
+    </script>
 </body>
 </html>

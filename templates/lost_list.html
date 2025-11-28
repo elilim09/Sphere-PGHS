@@ -154,6 +154,9 @@
             align-items: center;
             gap: 6px;
             transition: all 0.2s;
+            border: none;
+            background: transparent;
+            cursor: pointer;
         }
 
         .nav-item.active {
@@ -162,6 +165,117 @@
         }
 
         .nav-icon { width: 18px; height: 18px; }
+
+        /* Zero-touch AI Overlay */
+        .ai-overlay {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 120;
+        }
+
+        .ai-overlay.active { opacity: 1; }
+
+        .ai-aurora {
+            position: absolute;
+            inset: 0;
+            background: conic-gradient(from 140deg, rgba(49,130,246,0.12), rgba(255,255,255,0.06), rgba(49,130,246,0.18));
+            filter: blur(120px);
+            opacity: 0.65;
+            animation: auroraShift 12s infinite alternate;
+        }
+
+        .ai-aurora.second {
+            background: conic-gradient(from 320deg, rgba(255,255,255,0.12), rgba(49,130,246,0.2), rgba(255,255,255,0.05));
+            animation-duration: 16s;
+        }
+
+        @keyframes auroraShift {
+            0% { transform: translate3d(-10px, 0, 0) scale(1); }
+            100% { transform: translate3d(12px, -12px, 0) scale(1.04); }
+        }
+
+        .ai-control-bar {
+            position: fixed;
+            bottom: 108px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            align-items: center;
+            gap: 10px;
+            background: rgba(12, 16, 24, 0.85);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 18px;
+            padding: 10px 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            max-width: 520px;
+            width: calc(100% - 32px);
+            pointer-events: auto;
+        }
+
+        .ai-overlay.active .ai-control-bar { display: flex; }
+
+        .ai-input {
+            flex: 1;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.06);
+            color: white;
+            font-size: 15px;
+        }
+
+        .ai-input::placeholder { color: rgba(255,255,255,0.8); }
+
+        .ai-submit, .ai-mic {
+            border: none;
+            background: var(--primary);
+            color: white;
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 10px 20px rgba(49, 130, 246, 0.35);
+        }
+
+        .ai-mic.listening { background: #FF3B30; box-shadow: 0 10px 20px rgba(255, 59, 48, 0.3); }
+
+        /* Toasts */
+        .toast-stack {
+            position: fixed;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 130;
+            width: min(480px, calc(100% - 32px));
+        }
+
+        .toast {
+            background: rgba(25, 31, 40, 0.95);
+            color: white;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 14px 40px rgba(0,0,0,0.2);
+            font-weight: 600;
+            animation: fadeSlide 0.2s ease;
+        }
+
+        .toast.success { border-left: 4px solid #20C997; }
+        .toast.error { border-left: 4px solid #FF6B6B; }
+
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
         /* Floating Write Button (FAB) */
         .fab {
@@ -226,6 +340,21 @@
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             검색
         </a>
+        <button type="button" class="nav-item ai-launch">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"></path><path d="M12 18v4"></path><path d="m4.93 4.93 2.83 2.83"></path><path d="m16.24 16.24 2.83 2.83"></path><path d="M2 12h4"></path><path d="M18 12h4"></path><path d="m4.93 19.07 2.83-2.83"></path><path d="m16.24 7.76 2.83-2.83"></path></svg>
+            AI 제어
+        </button>
     </nav>
+
+    <div class="ai-overlay" id="aiOverlay" aria-hidden="true">
+        <div class="ai-aurora"></div>
+        <div class="ai-aurora second"></div>
+        <form class="ai-control-bar" id="aiControls">
+            <input class="ai-input" id="aiInput" placeholder="분실물 찾아줘, 등록 페이지 열어줘" autocomplete="off" />
+            <button class="ai-submit" type="submit" id="aiSend">지시</button>
+            <button class="ai-mic" type="button" id="aiMic" aria-label="음성 입력">🎙</button>
+        </form>
+    </div>
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
 </body>
 </html>
