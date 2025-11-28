@@ -134,18 +134,31 @@
             bottom: 24px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(25, 31, 40, 0.9);
+            background: rgba(25, 31, 40, 0.92);
             backdrop-filter: blur(20px);
-            padding: 6px;
+            padding: 8px 12px;
             border-radius: 100px;
             display: flex;
-            gap: 4px;
+            align-items: center;
+            gap: 10px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             z-index: 100;
         }
 
+        .nav-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-divider {
+            width: 1px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.16);
+        }
+
         .nav-item {
-            padding: 12px 20px;
+            padding: 12px 18px;
             border-radius: 100px;
             text-decoration: none;
             color: #B0B8C1;
@@ -168,6 +181,32 @@
         }
 
         .nav-icon { width: 18px; height: 18px; flex-shrink: 0; }
+
+        .ai-button {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            padding: 0;
+            min-width: 0;
+            justify-content: center;
+            background: linear-gradient(135deg, #3182F6, #1B64DA);
+            color: white;
+            box-shadow: 0 12px 30px rgba(49, 130, 246, 0.35);
+        }
+
+        .ai-button .nav-icon { width: 22px; height: 22px; }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
 
         @media (max-width: 420px) {
             .nav-item { padding: 10px 14px; font-size: 13px; gap: 4px; }
@@ -359,22 +398,27 @@
     </a>
 
     <nav class="bottom-nav">
-        <a href="/" class="nav-item">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
-            홈
-        </a>
-        <a href="/lost" class="nav-item active">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
-            분실물
-        </a>
-        <a href="/lost/search" class="nav-item">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            검색
-        </a>
-        <button type="button" class="nav-item ai-launch">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"></path><path d="M12 18v4"></path><path d="m4.93 4.93 2.83 2.83"></path><path d="m16.24 16.24 2.83 2.83"></path><path d="M2 12h4"></path><path d="M18 12h4"></path><path d="m4.93 19.07 2.83-2.83"></path><path d="m16.24 7.76 2.83-2.83"></path></svg>
-            AI 제어
-        </button>
+        <div class="nav-group" role="group" aria-label="주요 메뉴">
+            <a href="/" class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+                홈
+            </a>
+            <a href="/lost" class="nav-item active">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                분실물
+            </a>
+            <a href="/lost/search" class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                검색
+            </a>
+        </div>
+        <div class="nav-divider" aria-hidden="true"></div>
+        <div class="nav-group" role="group" aria-label="AI 제어">
+            <button type="button" class="nav-item ai-launch ai-button">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"></path><path d="M12 18v4"></path><path d="m4.93 4.93 2.83 2.83"></path><path d="m16.24 16.24 2.83 2.83"></path><path d="M2 12h4"></path><path d="M18 12h4"></path><path d="m4.93 19.07 2.83-2.83"></path><path d="m16.24 7.76 2.83-2.83"></path></svg>
+                <span class="sr-only">AI 제어 열기</span>
+            </button>
+        </div>
     </nav>
 
     <div class="ai-overlay" id="aiOverlay" aria-hidden="true">
