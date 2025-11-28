@@ -9,3 +9,7 @@ ai로 급식판 예시 사진 만들기
 
 에이전트(feature/ai)
 사이트 전반에 걸쳐 총괄적인 도움
+
+docker build -t sphere-pghs .
+docker tag sphere-pghs hwanghj09/sphere-pghs:latest
+docker push hwanghj09/sphere-pghs:latest

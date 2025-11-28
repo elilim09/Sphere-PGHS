@@ -19,3 +19,10 @@ docker push hwanghj09/sphere-pghs:latest
 OPENAI_API_KEY = [openai api key]
 ```
 이렇게 구성되어있어야합니다.
+
+```
+docker run --env-file .env -p 8000:8000 hwanghj09/sphere-pghs
+```
+위에서 만든 .env와 같은 디렉토리에서 이 명령어를 실행하면 서버가 실행됩니다.
+
+
