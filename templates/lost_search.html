@@ -165,6 +165,9 @@
             align-items: center;
             gap: 6px;
             transition: all 0.2s;
+            border: none;
+            background: transparent;
+            cursor: pointer;
         }
 
         .nav-item.active {
@@ -173,6 +176,151 @@
         }
         
         .nav-icon { width: 18px; height: 18px; }
+
+        /* Zero-touch AI Overlay */
+        .ai-overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 20% 20%, rgba(49, 130, 246, 0.2), transparent 40%),
+                        radial-gradient(circle at 80% 0%, rgba(255, 255, 255, 0.12), transparent 40%),
+                        rgba(6, 10, 16, 0.75);
+            backdrop-filter: blur(18px);
+            display: none;
+            flex-direction: column;
+            justify-content: flex-end;
+            z-index: 999;
+            color: white;
+            padding: 24px 18px 30px;
+        }
+
+        .ai-overlay.active { display: flex; }
+
+        .ai-aurora {
+            position: absolute;
+            inset: 0;
+            background: conic-gradient(from 140deg, rgba(49,130,246,0.25), rgba(255,255,255,0.1), rgba(49,130,246,0.3));
+            filter: blur(80px);
+            opacity: 0.9;
+            animation: auroraShift 9s infinite alternate;
+        }
+
+        .ai-aurora.second {
+            background: conic-gradient(from 320deg, rgba(255,255,255,0.2), rgba(49,130,246,0.35), rgba(255,255,255,0.05));
+            animation-duration: 12s;
+        }
+
+        @keyframes auroraShift {
+            0% { transform: translate3d(-10px, 0, 0) scale(1); }
+            100% { transform: translate3d(10px, -10px, 0) scale(1.05); }
+        }
+
+        .ai-shell {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            background: rgba(18, 22, 28, 0.8);
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+            border-radius: 24px;
+            padding: 18px;
+            backdrop-filter: blur(10px);
+        }
+
+        .ai-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .ai-title {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.2px;
+        }
+
+        .ai-sub {
+            margin: 2px 0 0;
+            color: #D1D6DB;
+            font-size: 13px;
+        }
+
+        .ai-close {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .ai-log {
+            max-height: 35vh;
+            overflow-y: auto;
+            padding: 12px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.12);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .ai-bubble {
+            padding: 12px 14px;
+            border-radius: 14px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .ai-bubble.user { background: rgba(49, 130, 246, 0.18); color: #E8F1FF; align-self: flex-end; }
+        .ai-bubble.agent { background: rgba(255,255,255,0.1); color: white; align-self: flex-start; }
+        .ai-bubble.system { background: rgba(255,255,255,0.08); color: #F2F4F6; align-self: stretch; }
+
+        .ai-input-bar {
+            margin-top: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 10px;
+            border-radius: 16px;
+        }
+
+        .ai-input {
+            flex: 1;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.25);
+            color: white;
+            font-size: 15px;
+        }
+
+        .ai-input::placeholder { color: rgba(255,255,255,0.6); }
+
+        .ai-btn, .ai-mic {
+            border: none;
+            background: var(--primary);
+            color: white;
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 10px 20px rgba(49, 130, 246, 0.3);
+        }
+
+        .ai-mic.listening { background: #FF3B30; box-shadow: 0 10px 20px rgba(255, 59, 48, 0.3); }
+
+        body.no-scroll { overflow: hidden; }
 
     </style>
 </head>
@@ -223,6 +371,163 @@
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             검색
         </a>
+        <button type="button" class="nav-item ai-launch">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"></path><path d="M12 18v4"></path><path d="m4.93 4.93 2.83 2.83"></path><path d="m16.24 16.24 2.83 2.83"></path><path d="M2 12h4"></path><path d="M18 12h4"></path><path d="m4.93 19.07 2.83-2.83"></path><path d="m16.24 7.76 2.83-2.83"></path></svg>
+            AI 제어
+        </button>
     </nav>
+
+    <div class="ai-overlay" id="aiOverlay" aria-hidden="true">
+        <div class="ai-aurora"></div>
+        <div class="ai-aurora second"></div>
+        <div class="ai-shell">
+            <div class="ai-header">
+                <div>
+                    <p class="ai-title">Sphere Copilot</p>
+                    <p class="ai-sub">AI가 페이지를 제어할 수 있어요. 음성·텍스트로 지시해 보세요.</p>
+                </div>
+                <button class="ai-close" type="button" id="aiClose">닫기</button>
+            </div>
+            <div class="ai-log" id="aiLog" aria-live="polite"></div>
+            <form class="ai-input-bar" id="aiForm">
+                <button class="ai-mic" type="button" id="aiMic">🎙</button>
+                <input class="ai-input" id="aiInput" placeholder="예) 가방 검색해 줘, 홈으로 이동" autocomplete="off" />
+                <button class="ai-btn" type="submit">보내기</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const overlay = document.getElementById('aiOverlay');
+            const aiLog = document.getElementById('aiLog');
+            const aiInput = document.getElementById('aiInput');
+            const aiForm = document.getElementById('aiForm');
+            const aiMic = document.getElementById('aiMic');
+            const openButtons = document.querySelectorAll('.ai-launch');
+            const closeButton = document.getElementById('aiClose');
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            let recognition = null;
+            let listening = false;
+
+            function appendBubble(text, role = 'agent') {
+                const bubble = document.createElement('div');
+                bubble.className = `ai-bubble ${role}`;
+                bubble.textContent = text;
+                aiLog.appendChild(bubble);
+                aiLog.scrollTop = aiLog.scrollHeight;
+            }
+
+            function openOverlay() {
+                overlay.classList.add('active');
+                document.body.classList.add('no-scroll');
+                if (!aiLog.childElementCount) {
+                    appendBubble('AI가 페이지를 제어할 준비가 되었어요. 원하는 동작을 말하거나 입력해 주세요.', 'system');
+                }
+                aiInput.focus();
+            }
+
+            function closeOverlay() {
+                overlay.classList.remove('active');
+                document.body.classList.remove('no-scroll');
+            }
+
+            async function sendToAgent(message) {
+                appendBubble(message, 'user');
+                const thinking = document.createElement('div');
+                thinking.className = 'ai-bubble agent';
+                thinking.textContent = '지시를 이해하는 중...';
+                aiLog.appendChild(thinking);
+                aiLog.scrollTop = aiLog.scrollHeight;
+
+                try {
+                    const response = await fetch('/api/agent', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message, current_path: window.location.pathname })
+                    });
+                    const data = await response.json();
+                    thinking.remove();
+                    appendBubble(data.reply || '응답을 불러올 수 없어요.', 'agent');
+                    handleActions(data.actions || []);
+                } catch (error) {
+                    thinking.remove();
+                    appendBubble('서버 연결에 문제가 있어요. 잠시 후 다시 시도해 주세요.', 'agent');
+                }
+            }
+
+            function handleActions(actions) {
+                if (!Array.isArray(actions)) return;
+                actions.forEach((action) => {
+                    if (!action || !action.type) return;
+                    const target = action.target;
+                    switch (action.type) {
+                        case 'navigate':
+                            if (target) window.location.href = target;
+                            break;
+                        case 'open_form':
+                            window.location.href = '/lost/new';
+                            break;
+                        case 'search_lost':
+                            window.location.href = target || '/lost/search';
+                            break;
+                        case 'announce':
+                            if (action.message) appendBubble(action.message, 'system');
+                            break;
+                        default:
+                            break;
+                    }
+                });
+            }
+
+            openButtons.forEach((btn) => btn.addEventListener('click', openOverlay));
+            closeButton.addEventListener('click', closeOverlay);
+
+            aiForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const message = aiInput.value.trim();
+                if (!message) return;
+                aiInput.value = '';
+                sendToAgent(message);
+            });
+
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.lang = 'ko-KR';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    aiInput.value = transcript;
+                    appendBubble(`🎤 ${transcript}`, 'user');
+                    sendToAgent(transcript);
+                };
+
+                recognition.onend = () => {
+                    listening = false;
+                    aiMic.classList.remove('listening');
+                    aiMic.textContent = '🎙';
+                };
+            }
+
+            aiMic.addEventListener('click', () => {
+                if (!recognition) {
+                    appendBubble('이 브라우저에서는 음성 입력을 지원하지 않아요. 텍스트로 입력해 주세요.', 'system');
+                    return;
+                }
+
+                if (listening) {
+                    recognition.stop();
+                    return;
+                }
+
+                listening = true;
+                aiMic.classList.add('listening');
+                aiMic.textContent = '◼';
+                recognition.start();
+            });
+        })();
+    </script>
 </body>
 </html>
