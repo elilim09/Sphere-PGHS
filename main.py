@@ -159,9 +159,13 @@ async def ai_agent_endpoint(payload: AgentRequest):
         "- navigate: `target`에 이동할 경로(URL path) 지정.\n"
         "- announce: 화면 상에 안내만 하고 동작 없음.\n"
         "- search_lost: 분실물 검색을 실행. target에는 검색어를 채우고, 검색 페이지로 이동이 필요하면 /lost/search?q=키워드로 이동.\n"
-        "- open_form: 분실물 등록 폼으로 이동.\n"
+        "- open_form 또는 open_lost_form: 분실물 등록 폼으로 이동.\n"
+        "- fill_field: target에 item_name/item_description을 넣고 message에는 채울 값을 넣어 필드를 완성.\n"
+        "- submit_lost_form: 작성된 폼을 제출. 필요 시 open_form→fill_field→submit_lost_form 순서를 붙인다.\n"
+        "- focus_search: 검색창을 포커스.\n"
+        "- toggle_overlay: target에 open/close를 넣어 AI 오버레이를 열거나 닫음.\n"
         "- open_meal_image: 급식 카드의 '보기' 버튼을 클릭해 이미지를 띄움. target에 급식 메뉴 텍스트를 포함.\n"
-        "답변 예시: {\"reply\":\"분실물 등록을 열게요\", \"actions\":[{\"type\":\"open_form\", \"target\":\"/lost/new\"}]}."
+        "답변 예시: {\"reply\":\"분실물 등록을 열게요\", \"actions\":[{\"type\":\"open_form\", \"target\":\"/lost/new\"},{\"type\":\"fill_field\",\"target\":\"item_name\",\"message\":\"검은색 지갑\"}]}"
     )
 
     user_prompt = (
@@ -169,7 +173,7 @@ async def ai_agent_endpoint(payload: AgentRequest):
         f"현재 페이지 경로: {payload.current_path}\n"
         "- 분실물 검색 의도는 search_lost로 target에 검색 키워드를 담아라.\n"
         "- 급식 이미지를 열어달라는 요청은 open_meal_image로 대응하고 target은 급식 메뉴 텍스트로 작성하라.\n"
-        "- 페이지 이동은 navigate로, 등록 폼 이동은 open_form으로 표시한다. 반드시 JSON 객체 하나만 응답한다."
+        "- 페이지 이동은 navigate로, 등록 폼 이동은 open_form으로 표시한다. 폼 입력은 fill_field와 submit_lost_form을 사용한다. 반드시 JSON 객체 하나만 응답한다."
     )
 
     completion = client.chat.completions.create(
