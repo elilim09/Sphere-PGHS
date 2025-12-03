@@ -28,6 +28,89 @@ app.mount("/lost_images", StaticFiles(directory="lost_and_found_images"), name="
 
 templates = Jinja2Templates(directory="templates")
 
+MEAL_CACHE_PATH = "meal_cache.json"
+meal_cache = {"meal_date": None, "meal_list": [], "neis_error": None}
+
+
+def load_cached_meals():
+    if not os.path.exists(MEAL_CACHE_PATH):
+        return None
+
+    try:
+        with open(MEAL_CACHE_PATH, "r", encoding="utf-8") as cache_file:
+            cached = json.load(cache_file)
+            if {
+                "meal_date",
+                "meal_list",
+                "neis_error",
+            }.issubset(cached.keys()):
+                return cached
+    except Exception as e:
+        print(f"[MEAL CACHE] 캐시 파일 로드 실패: {e}")
+
+    return None
+
+
+def save_meal_cache(data: dict):
+    try:
+        with open(MEAL_CACHE_PATH, "w", encoding="utf-8") as cache_file:
+            json.dump(data, cache_file, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[MEAL CACHE] 캐시 파일 저장 실패: {e}")
+
+
+async def fetch_meals_from_neis(meal_date: str):
+    url = (
+        "https://open.neis.go.kr/hub/mealServiceDietInfo"
+        f"?Type=json&pIndex=1&pSize=100"
+        f"&ATPT_OFCDC_SC_CODE=J10&SD_SCHUL_CODE=7531255&MLSV_YMD={meal_date}"
+    )
+
+    meal_info_list = []
+    neis_error = None
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as http_client:
+            response = await http_client.get(url)
+            response.raise_for_status()
+            data = response.json()
+
+            if "mealServiceDietInfo" in data:
+                meal_info_list = [
+                    item["DDISH_NM"]
+                    for item in data["mealServiceDietInfo"][1]["row"]
+                ]
+    except httpx.ReadTimeout:
+        print("[NEIS] 급식 정보 요청 타임아웃 발생")
+        neis_error = "급식 정보를 불러오는 중 시간이 초과되었습니다."
+    except httpx.HTTPError as e:
+        print(f"[NEIS] HTTP 오류 발생: {e}")
+        neis_error = "급식 정보를 불러오는 중 오류가 발생했습니다."
+    except Exception as e:
+        print(f"[NEIS] 알 수 없는 오류: {e}")
+        neis_error = "급식 정보를 불러오는 중 알 수 없는 오류가 발생했습니다."
+
+    return meal_info_list, neis_error
+
+
+@app.on_event("startup")
+async def initialize_meal_cache():
+    meal_date = date.today().strftime("%Y%m%d")
+    cached = load_cached_meals()
+
+    if cached and cached.get("meal_date") == meal_date:
+        meal_cache.update(cached)
+        return
+
+    meal_list, neis_error = await fetch_meals_from_neis(meal_date)
+    updated_cache = {
+        "meal_date": meal_date,
+        "meal_list": meal_list,
+        "neis_error": neis_error,
+    }
+    meal_cache.update(updated_cache)
+    save_meal_cache(updated_cache)
+
 
 class AgentAction(BaseModel):
     type: str
@@ -46,40 +129,9 @@ class AgentResponse(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, meal_description: str = Query(None)):
-    meal_date = date.today().strftime("%Y%m%d")
-    url = (
-        "https://open.neis.go.kr/hub/mealServiceDietInfo"
-        f"?Type=json&pIndex=1&pSize=100"
-        f"&ATPT_OFCDC_SC_CODE=J10&SD_SCHUL_CODE=7531255&MLSV_YMD={meal_date}"
-    )
-    
-    meal_info_list = []
-    neis_error = None  # 에러 메시지 템플릿에 넘길 용도(선택사항)
-
-    # ✅ NEIS API 호출 부분에 예외 처리 추가
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as http_client:
-            response = await http_client.get(url)
-            response.raise_for_status()  # HTTP 4xx/5xx면 예외
-            data = response.json()
-
-            if "mealServiceDietInfo" in data:
-                meal_info_list = [
-                    item["DDISH_NM"]
-                    for item in data["mealServiceDietInfo"][1]["row"]
-                ]
-    except httpx.ReadTimeout:
-        # 응답이 너무 느릴 때: 서버는 안 죽이고, 그냥 빈 리스트로 넘김
-        print("[NEIS] 급식 정보 요청 타임아웃 발생")
-        neis_error = "급식 정보를 불러오는 중 시간이 초과되었습니다."
-    except httpx.HTTPError as e:
-        # 4xx / 5xx 또는 기타 HTTP 오류
-        print(f"[NEIS] HTTP 오류 발생: {e}")
-        neis_error = "급식 정보를 불러오는 중 오류가 발생했습니다."
-    except Exception as e:
-        # 혹시 모를 기타 오류
-        print(f"[NEIS] 알 수 없는 오류: {e}")
-        neis_error = "급식 정보를 불러오는 중 알 수 없는 오류가 발생했습니다."
+    meal_date = meal_cache.get("meal_date") or date.today().strftime("%Y%m%d")
+    meal_info_list = meal_cache.get("meal_list", [])
+    neis_error = meal_cache.get("neis_error")
 
     # =============================
     # 아래부터는 기존 이미지 생성 로직 그대로 활용
