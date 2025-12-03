@@ -28,6 +28,10 @@ app.mount("/lost_images", StaticFiles(directory="lost_and_found_images"), name="
 templates = Jinja2Templates(directory="templates")
 
 
+MEAL_CACHE_PATH = "meal_cache.json"
+meal_cache = {"date": None, "meals": []}
+
+
 class AgentAction(BaseModel):
     type: str
     target: Optional[str] = None
@@ -43,17 +47,70 @@ class AgentResponse(BaseModel):
     reply: str
     actions: List[AgentAction]
 
-@app.get("/")
-async def read_root(request: Request, meal_description: str = Query(None)):
-    meal_date = date.today().strftime("%Y%m%d")
-    url = f"https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&pIndex=1&pSize=100&ATPT_OFCDC_SC_CODE=J10&SD_SCHUL_CODE=7531255&MLSV_YMD={meal_date}"
-    
-    meal_info_list = []
+def load_meal_cache_from_disk():
+    if not os.path.exists(MEAL_CACHE_PATH):
+        return None
+    try:
+        with open(MEAL_CACHE_PATH, "r") as f:
+            cached = json.load(f)
+            if isinstance(cached, dict) and "date" in cached and "meals" in cached:
+                return cached
+    except Exception:
+        return None
+    return None
+
+
+def save_meal_cache(meal_date: str, meals: list[str]):
+    try:
+        with open(MEAL_CACHE_PATH, "w") as f:
+            json.dump({"date": meal_date, "meals": meals}, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
+async def fetch_meals_from_neis(meal_date: str) -> list[str]:
+    url = (
+        "https://open.neis.go.kr/hub/mealServiceDietInfo"
+        "?Type=json&pIndex=1&pSize=100&ATPT_OFCDC_SC_CODE=J10&SD_SCHUL_CODE=7531255"
+        f"&MLSV_YMD={meal_date}"
+    )
+
     async with httpx.AsyncClient() as http_client:
         response = await http_client.get(url)
         data = response.json()
         if "mealServiceDietInfo" in data:
-            meal_info_list = [item['DDISH_NM'] for item in data['mealServiceDietInfo'][1]['row']]
+            return [item["DDISH_NM"] for item in data["mealServiceDietInfo"][1]["row"]]
+    return []
+
+
+async def initialize_meal_cache():
+    today = date.today().strftime("%Y%m%d")
+    cached = load_meal_cache_from_disk()
+    if cached and cached.get("date") == today:
+        meal_cache["date"] = cached.get("date")
+        meal_cache["meals"] = cached.get("meals", [])
+        return
+
+    meals = await fetch_meals_from_neis(today)
+    if not meals and cached:
+        meal_cache["date"] = cached.get("date")
+        meal_cache["meals"] = cached.get("meals", [])
+        return
+
+    meal_cache["date"] = today
+    meal_cache["meals"] = meals
+    save_meal_cache(today, meals)
+
+
+@app.on_event("startup")
+async def startup_event():
+    await initialize_meal_cache()
+
+
+@app.get("/")
+async def read_root(request: Request, meal_description: str = Query(None)):
+    meal_date = meal_cache.get("date") or date.today().strftime("%Y%m%d")
+    meal_info_list = meal_cache.get("meals", [])
 
     image_url = None
     if meal_description:
