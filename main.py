@@ -69,32 +69,26 @@ async def fetch_meals_from_neis(meal_date: str):
     meal_info_list = []
     neis_error = None
 
-    max_attempts = 3
-    for attempt in range(1, max_attempts + 1):
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as http_client:
-                response = await http_client.get(url)
-                response.raise_for_status()
-                data = response.json()
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as http_client:
+            response = await http_client.get(url)
+            response.raise_for_status()
+            data = response.json()
 
-                if "mealServiceDietInfo" in data:
-                    meal_info_list = [
-                        item["DDISH_NM"]
-                        for item in data["mealServiceDietInfo"][1]["row"]
-                    ]
-                break
-        except httpx.ReadTimeout:
-            print(f"[NEIS] 급식 정보 요청 타임아웃 발생 (시도 {attempt}/{max_attempts})")
-            if attempt == max_attempts:
-                neis_error = "급식 정보를 불러오는 중 시간이 초과되었습니다."
-        except httpx.HTTPError as e:
-            print(f"[NEIS] HTTP 오류 발생: {e}")
-            neis_error = "급식 정보를 불러오는 중 오류가 발생했습니다."
-            break
-        except Exception as e:
-            print(f"[NEIS] 알 수 없는 오류: {e}")
-            neis_error = "급식 정보를 불러오는 중 알 수 없는 오류가 발생했습니다."
-            break
+            if "mealServiceDietInfo" in data:
+                meal_info_list = [
+                    item["DDISH_NM"]
+                    for item in data["mealServiceDietInfo"][1]["row"]
+                ]
+    except httpx.ReadTimeout:
+        print("[NEIS] 급식 정보 요청 타임아웃 발생")
+        neis_error = "급식 정보를 불러오는 중 시간이 초과되었습니다."
+    except httpx.HTTPError as e:
+        print(f"[NEIS] HTTP 오류 발생: {e}")
+        neis_error = "급식 정보를 불러오는 중 오류가 발생했습니다."
+    except Exception as e:
+        print(f"[NEIS] 알 수 없는 오류: {e}")
+        neis_error = "급식 정보를 불러오는 중 알 수 없는 오류가 발생했습니다."
 
     return meal_info_list, neis_error
 
