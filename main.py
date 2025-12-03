@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, Query, File, UploadFile, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 import httpx
 from datetime import date, datetime
 import openai
@@ -43,23 +44,50 @@ class AgentResponse(BaseModel):
     reply: str
     actions: List[AgentAction]
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, meal_description: str = Query(None)):
     meal_date = date.today().strftime("%Y%m%d")
-    url = f"https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&pIndex=1&pSize=100&ATPT_OFCDC_SC_CODE=J10&SD_SCHUL_CODE=7531255&MLSV_YMD={meal_date}"
+    url = (
+        "https://open.neis.go.kr/hub/mealServiceDietInfo"
+        f"?Type=json&pIndex=1&pSize=100"
+        f"&ATPT_OFCDC_SC_CODE=J10&SD_SCHUL_CODE=7531255&MLSV_YMD={meal_date}"
+    )
     
     meal_info_list = []
-    async with httpx.AsyncClient() as http_client:
-        response = await http_client.get(url)
-        data = response.json()
-        if "mealServiceDietInfo" in data:
-            meal_info_list = [item['DDISH_NM'] for item in data['mealServiceDietInfo'][1]['row']]
+    neis_error = None  # 에러 메시지 템플릿에 넘길 용도(선택사항)
 
+    # ✅ NEIS API 호출 부분에 예외 처리 추가
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as http_client:
+            response = await http_client.get(url)
+            response.raise_for_status()  # HTTP 4xx/5xx면 예외
+            data = response.json()
+
+            if "mealServiceDietInfo" in data:
+                meal_info_list = [
+                    item["DDISH_NM"]
+                    for item in data["mealServiceDietInfo"][1]["row"]
+                ]
+    except httpx.ReadTimeout:
+        # 응답이 너무 느릴 때: 서버는 안 죽이고, 그냥 빈 리스트로 넘김
+        print("[NEIS] 급식 정보 요청 타임아웃 발생")
+        neis_error = "급식 정보를 불러오는 중 시간이 초과되었습니다."
+    except httpx.HTTPError as e:
+        # 4xx / 5xx 또는 기타 HTTP 오류
+        print(f"[NEIS] HTTP 오류 발생: {e}")
+        neis_error = "급식 정보를 불러오는 중 오류가 발생했습니다."
+    except Exception as e:
+        # 혹시 모를 기타 오류
+        print(f"[NEIS] 알 수 없는 오류: {e}")
+        neis_error = "급식 정보를 불러오는 중 알 수 없는 오류가 발생했습니다."
+
+    # =============================
+    # 아래부터는 기존 이미지 생성 로직 그대로 활용
+    # =============================
     image_url = None
     if meal_description:
-        # 파일명 생성을 위해 해시값 사용
         hasher = hashlib.sha256()
-        hasher.update(meal_description.encode('utf-8'))
+        hasher.update(meal_description.encode("utf-8"))
         filename_base = hasher.hexdigest()[:10]
         filename = f"{meal_date}_{filename_base}.png"
         filepath = os.path.join("meal_img", filename)
@@ -67,30 +95,41 @@ async def read_root(request: Request, meal_description: str = Query(None)):
         if os.path.exists(filepath):
             image_url = f"/static/{filename}"
         else:
-            response = client.images.generate(
-                model="dall-e-3",
-                prompt=f"당신은 학교 급식 예시 메뉴를 그리는 에이전트이다. 당신이 그려야 할 실제 학교 급식판은 급식판은 스테인리스로 제작된 직사각형 금속 식판으로, 표면은 매끄럽고 은색 광택이 나며 전체적으로 단단하고 위생적인 느낌을 준다. 이 급식판은 여섯 개의 칸으로 구성되어 있는데, 각 칸은 서로 높이가 같은 얕은 오목 형태이며, 금속판을 성형하여 자연스럽게 이어진 구조다. 모서리는 모두 부드럽게 둥글려 있어 사용 시 손에 걸리는 부분이 없도록 처리되어 있다. 가장 큰 칸은 직사각형 형태로 왼쪽 하단에 위치하며, 밥이나 메인 요리를 담기 알맞은 넓이를 갖고 있다. 이 칸은 다른 칸보다 면적이 넓고 단순한 형태다. 오른쪽 하단에는 원형의 깊지 않은 둥근 칸이 자리 잡고 있는데, 국이나 액체가 있는 음식을 담기 좋도록 둘레가 둥글게 처리가 되어 있다. 상단에는 여러 크기의 작은 칸이 나뉘어 있는데, 그중 하나는 좁고 길게 세로로 배열된 직사각형 칸 두 개가 나란히 배치된 형태로 되어 있어 볶음류나 조림류 같은 작은 반찬을 구분하여 담을 수 있게 구성되어 있다. 그 옆에는 정사각형 또는 작은 직사각형 형태의 보조 반찬 칸들이 자리하며, 각각 깊이는 동일하지만 크기가 다르다. 전체적으로 이 급식판은 여러 종류의 반찬과 국, 밥을 한 번에 분리하여 담는 데 최적화된 구조를 가지고 있으며, 칸마다 형태가 미묘하게 다르지만 서로 자연스럽게 이어지는 통일된 금속 일체형 디자인으로 이루어져 있다. 스테인리스 특유의 얇고 단단한 재질 덕분에 무게는 과도하지 않으면서도 강도가 높고, 세척이 용이하도록 모서리와 칸의 경계가 자연스럽게 완만하게 연결되어 있는 것이 특징이다.\n\n 아래 리스트의 음식을 급식판에 실제와 같이 그려라. 단, 항상 실사와 같이 묘사하고 음식은 컬러로 표시하여라.\n {meal_description}",
-                size="1024x1024",
-                quality="standard",
-                n=1,
-            )
-            generated_image_url = response.data[0].url
-            
-            # 생성된 이미지를 다운로드하여 저장
-            async with httpx.AsyncClient() as image_client:
-                image_response = await image_client.get(generated_image_url)
-                with open(filepath, "wb") as f:
-                    f.write(image_response.content)
-            
-            image_url = f"/static/{filename}"
+            # OpenAI 이미지 생성도 네트워크 호출이라, 여기도 try/except 달아두면 더 안전함
+            try:
+                response = client.images.generate(
+                    model="dall-e-3",
+                    prompt=(
+                        "당신은 학교 급식 예시 메뉴를 그리는 에이전트이다. 당신이 그려야 할 실제 학교 급식판은 급식판은 스테인리스로 제작된 직사각형 금속 식판으로, 표면은 매끄럽고 은색 광택이 나며 전체적으로 단단하고 위생적인 느낌을 준다. 이 급식판은 여섯 개의 칸으로 구성되어 있는데, 각 칸은 서로 높이가 같은 얕은 오목 형태이며, 금속판을 성형하여 자연스럽게 이어진 구조다. 모서리는 모두 부드럽게 둥글려 있어 사용 시 손에 걸리는 부분이 없도록 처리되어 있다. 가장 큰 칸은 직사각형 형태로 왼쪽 하단에 위치하며, 밥이나 메인 요리를 담기 알맞은 넓이를 갖고 있다. 이 칸은 다른 칸보다 면적이 넓고 단순한 형태다. 오른쪽 하단에는 원형의 깊지 않은 둥근 칸이 자리 잡고 있는데, 국이나 액체가 있는 음식을 담기 좋도록 둘레가 둥글게 처리가 되어 있다. 상단에는 여러 크기의 작은 칸이 나뉘어 있는데, 그중 하나는 좁고 길게 세로로 배열된 직사각형 칸 두 개가 나란히 배치된 형태로 되어 있어 볶음류나 조림류 같은 작은 반찬을 구분하여 담을 수 있게 구성되어 있다. 그 옆에는 정사각형 또는 작은 직사각형 형태의 보조 반찬 칸들이 자리하며, 각각 깊이는 동일하지만 크기가 다르다. 전체적으로 이 급식판은 여러 종류의 반찬과 국, 밥을 한 번에 분리하여 담는 데 최적화된 구조를 가지고 있으며, 칸마다 형태가 미묘하게 다르지만 서로 자연스럽게 이어지는 통일된 금속 일체형 디자인으로 이루어져 있다. 스테인리스 특유의 얇고 단단한 재질 덕분에 무게는 과도하지 않으면서도 강도가 높고, 세척이 용이하도록 모서리와 칸의 경계가 자연스럽게 완만하게 연결되어 있는 것이 특징이다.\n\n 아래 리스트의 음식을 급식판에 실제와 같이 그려라. 단, 항상 실사와 같이 묘사하고 음식은 컬러로 표시하여라.\n "
+                        f"{meal_description}"
+                    ),
+                    size="1024x1024",
+                    quality="standard",
+                    n=1,
+                )
+                generated_image_url = response.data[0].url
 
-    return templates.TemplateResponse("index.html", {
-        "request": request, 
-        "meal_date": meal_date, 
-        "meal_list": meal_info_list, 
-        "image_url": image_url, 
-        "meal_description": meal_description
-    })
+                async with httpx.AsyncClient(timeout=20.0) as image_client:
+                    image_response = await image_client.get(generated_image_url)
+                    with open(filepath, "wb") as f:
+                        f.write(image_response.content)
+
+                image_url = f"/static/{filename}"
+            except Exception as e:
+                print(f"[IMAGE] 급식 이미지 생성/다운로드 오류: {e}")
+                image_url = None
+
+    return templates.TemplateResponse(
+        "index.html",
+        {
+            "request": request,
+            "meal_date": meal_date,
+            "meal_list": meal_info_list,
+            "image_url": image_url,
+            "meal_description": meal_description,
+            "neis_error": neis_error,  # 템플릿에서 필요하면 표시
+        },
+    )
 
 @app.get("/lost")
 async def get_lost_items(request: Request):
