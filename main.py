@@ -12,9 +12,12 @@ import json
 import shutil
 from typing import List, Optional
 from pydantic import BaseModel
+import pytz
 
 # .env 파일에서 환경 변수를 로드합니다.
 load_dotenv()
+seoul_tz = pytz.timezone('Asia/Seoul')
+meal_date = datetime.now(seoul_tz).strftime("%Y%m%d")
 
 # 발급받은 API 키를 설정합니다.
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
