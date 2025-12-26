@@ -132,7 +132,7 @@ class AgentResponse(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, meal_description: str = Query(None)):
-    meal_date = meal_cache.get("meal_date") or date.today().strftime("%Y%m%d")
+    meal_date = datetime.now(seoul_tz).strftime("%Y%m%d")
     meal_info_list = meal_cache.get("meal_list", [])
     neis_error = meal_cache.get("neis_error")
 
